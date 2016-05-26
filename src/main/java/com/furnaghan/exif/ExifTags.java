@@ -79,6 +79,10 @@ public class ExifTags {
 		return Collections.unmodifiableSet( tags.keySet() );
 	}
 
+	public boolean contains( final ExifTag tag ) {
+		return tags.containsKey( tag );
+	}
+
 	@SuppressWarnings("unchecked")
 	public <T> Collection<T> get( final ExifTag tag ) {
 		return (Collection<T>) tags.get( tag );
