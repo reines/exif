@@ -12,6 +12,21 @@ A simple Exif parser for Java.
 </dependency>
 ```
 
+Release versions are deployed to Maven Central, development versions are available via OSS Sonatype.
+
+```xml
+<repositories>
+    <repository>
+        <id>oss-sonatype</id>
+        <name>oss-sonatype</name>
+        <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
+        <snapshots>
+            <enabled>true</enabled>
+        </snapshots>
+    </repository>
+</repositories>
+```
+
 ## Usage
 
 ### Read the tags in an image.
