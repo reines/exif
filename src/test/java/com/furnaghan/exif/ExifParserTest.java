@@ -23,25 +23,61 @@ import org.junit.rules.TemporaryFolder;
 
 public class ExifParserTest {
 
+	private File copyFile( final String path ) throws IOException {
+		final File file = temporaryFolder.newFile();
+
+		// Just create a temp file for this test
+		try ( final InputStream in = ExifParserTest.class.getResourceAsStream( path ) ) {
+			Files.copy( in, file.toPath(), StandardCopyOption.REPLACE_EXISTING );
+		}
+
+		return file;
+	}
+
 	@Rule
 	public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
-	private File targetFile;
+	private File sampleImage, diggerImage;
 
 	@Before
 	public void setUp() throws IOException {
-		targetFile = temporaryFolder.newFile();
-
-		// Just create a temp file for this test
-		try ( final InputStream in = JpegParserTest.class.getResourceAsStream( "/images/img_1771.jpg" ) ) {
-			Files.copy( in, targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING );
-		}
+		sampleImage = copyFile( "/images/sample.jpg" );
+		diggerImage = copyFile( "/images/digger.jpg" );
 	}
 
 	@Test
-	public void testReadExistingImageHasExpectedTags() throws IOException {
+	public void testReadExistingImagePicasaHasExpectedTags() throws IOException {
 		// Read exif data, don't modify anything
-		final ExifTags tags = ExifParser.read( targetFile );
+		final ExifTags tags = ExifParser.read( diggerImage );
+
+		assertThat(
+				tags.keys(),
+				containsInAnyOrder( ExifTag.Image_XResolution, ExifTag.Image_Model,
+						ExifTag.Image_YResolution, ExifTag.Image_GPSTag, ExifTag.Image_DateTime,
+						ExifTag.Image_JPEGInterchangeFormatLength, ExifTag.Image_Make,
+						ExifTag.Image_JPEGInterchangeFormat, ExifTag.Image_Compression,
+						ExifTag.Image_YCbCrPositioning, ExifTag.Image_Software,
+						ExifTag.Image_ResolutionUnit, ExifTag.Image_Orientation,
+						ExifTag.Image_ExifTag) );
+
+		// Read directly
+		assertThat( tags.get( ExifTag.Image_Software ), Matchers.contains( "Picasa" ) );
+		assertThat( tags.get( ExifTag.Image_Make ), Matchers.contains( "LG Electronics" ) );
+		assertThat( tags.get( ExifTag.Image_Model ), Matchers.contains( "LG-H815" ) );
+
+		// Read using some helper methods
+		assertThat( tags.getDate(),
+				contains( Date.from( Instant.parse( "2016-03-13T11:49:14.00Z" ) ) ) );
+		assertThat( tags.getOrientation(), contains( ExifTags.Orientation.NORMAL ) );
+		assertThat( tags.getXResolution(), contains( 72 ) );
+		assertThat( tags.getYResolution(), contains( 72 ) );
+		assertThat( tags.getResolutionUnit(), contains( ExifTags.ResolutionUnit.INCHES ) );
+	}
+
+	@Test
+	public void testReadExistingSampleImageHasExpectedTags() throws IOException {
+		// Read exif data, don't modify anything
+		final ExifTags tags = ExifParser.read( sampleImage );
 
 		assertThat(
 				tags.keys(),
@@ -65,19 +101,39 @@ public class ExifParserTest {
 	public void testUpdateWritesToOriginalFile() throws IOException {
 		final String test = String.format( "test2_%s", new Date() );
 
-		final long originalFileSize = Files.size( targetFile.toPath() );
+		final long originalFileSize = Files.size( sampleImage.toPath() );
 
 		// Update the exif data, overwriting the existing file
-		ExifParser.update( targetFile, tags -> {
+		ExifParser.update( sampleImage, tags -> {
 			tags.set( ExifTag.Image_Make, test );
 		} );
 
 		// Check the file size changed, this is a rough indication that we actually did modify the file.
-		final long newFileSize = Files.size( targetFile.toPath() );
+		final long newFileSize = Files.size( sampleImage.toPath() );
 		assertThat( newFileSize, not( originalFileSize ) );
 
 		// Check that the make tag is what we set it to be
-		final Collection<String> make = ExifParser.read( targetFile ).get( ExifTag.Image_Make );
+		final Collection<String> make = ExifParser.read( sampleImage ).get( ExifTag.Image_Make );
+		assertThat( make, Matchers.contains( test ) );
+	}
+
+	@Test
+	public void testUpdateWithUnknownSegmentRetainsIt() throws IOException {
+		final String test = String.format( "test2_%s", new Date() );
+
+		final long originalFileSize = Files.size( diggerImage.toPath() );
+
+		// Update the exif data, overwriting the existing file
+		ExifParser.update( diggerImage, tags -> {
+			tags.set( ExifTag.Image_Make, test );
+		} );
+
+		// Check the file size changed, this is a rough indication that we actually did modify the file.
+		final long newFileSize = Files.size( diggerImage.toPath() );
+		assertThat( newFileSize, not( originalFileSize ) );
+
+		// Check that the make tag is what we set it to be
+		final Collection<String> make = ExifParser.read( diggerImage ).get( ExifTag.Image_Make );
 		assertThat( make, Matchers.contains( test ) );
 	}
 
@@ -85,21 +141,21 @@ public class ExifParserTest {
 	public void testSet() throws IOException {
 		final String test = String.format( "test2_%s", new Date() );
 
-		final long originalFileSize = Files.size( targetFile.toPath() );
+		final long originalFileSize = Files.size( sampleImage.toPath() );
 
 		// Create the exif data ourselves
 		final ExifTags tags = ExifTags.empty();
 		tags.set( ExifTag.Image_Make, test );
 
 		// Set the exif data, throwing away any existing, and overwriting the existing file
-		ExifParser.write( targetFile, tags );
+		ExifParser.write( sampleImage, tags );
 
 		// Check the file size changed, this is a rough indication that we actually did modify the file.
-		final long newFileSize = Files.size( targetFile.toPath() );
+		final long newFileSize = Files.size( sampleImage.toPath() );
 		assertThat( newFileSize, not( originalFileSize ) );
 
 		// Check that the date tag is what we set it to be
-		final ExifTags actualTags = ExifParser.read( targetFile );
+		final ExifTags actualTags = ExifParser.read( sampleImage );
 		assertThat( actualTags.keys(), Matchers.contains( ExifTag.Image_Make ) );
 		assertThat( actualTags.get( ExifTag.Image_Make ), containsInAnyOrder( test ) );
 	}
@@ -108,13 +164,13 @@ public class ExifParserTest {
 	public void testSetWrongDataTypeForNumericField() throws IOException {
 		final ExifTags tags = ExifTags.empty();
 		tags.set( ExifTag.Image_Orientation, "test" );
-		ExifParser.write( targetFile, tags );
+		ExifParser.write( sampleImage, tags );
 	}
 
 	@Test(expected = IllegalArgumentException.class)
 	public void testSetWrongDataTypeForStringField() throws IOException {
 		final ExifTags tags = ExifTags.empty();
 		tags.set( ExifTag.Image_DateTime, new byte[0] );
-		ExifParser.write( targetFile, tags );
+		ExifParser.write( sampleImage, tags );
 	}
 }

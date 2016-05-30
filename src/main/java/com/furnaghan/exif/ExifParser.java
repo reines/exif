@@ -1,6 +1,7 @@
 package com.furnaghan.exif;
 
 import static com.google.common.base.Preconditions.checkState;
+import static com.sun.javafx.tools.resource.DeployResource.Type.data;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -53,6 +54,8 @@ public class ExifParser {
 			if ( marker == EXIF_MARKER ) {
 				try ( final InputStream exifIn = new ByteArrayInputStream( data ) ) {
 					exif.set( readExifData( exifIn ) );
+				} catch ( final Exception e ) {
+					LOG.warn( "Failed to read exif segment", e );
 				}
 			}
 			return data;
@@ -69,7 +72,7 @@ public class ExifParser {
 		}
 
 		// Validate the start of the exif data
-		checkState( EXIF_NAME.equalsIgnoreCase( data.readString( 4 ) ) );
+		checkState( EXIF_NAME.equalsIgnoreCase( data.readString( 4 ) ), "Invalid Exif header" );
 		checkState( data.readShort() == 0 );
 
 		// Mark the start of the TIFF data
@@ -79,7 +82,7 @@ public class ExifParser {
 		data.setByteOrder( data.readByteOrder() );
 
 		// Validate TIFF marker
-		checkState( data.readShort() == 0x002A );
+		checkState( data.readShort() == 0x002A, "Invalid TIFF marker" );
 
 		final Collection<ExifTagReference> tags = Lists.newLinkedList();
 
@@ -138,6 +141,8 @@ public class ExifParser {
 						writeExifData( exif, exifOut );
 						return exifOut.toByteArray();
 					}
+				} catch ( final Exception e ) {
+					LOG.warn( "Failed to read exif segment", e );
 				}
 			}
 			return data;
@@ -261,7 +266,8 @@ public class ExifParser {
 				bytes = new ByteArrayInputStream( offset, 0, length );
 			}
 
-			return (Collection<T>) type.decode( new StreamReader( bytes, data.getByteOrder() ), length );
+			return (Collection<T>) type.decode( new StreamReader( bytes, data.getByteOrder() ),
+					length );
 		}
 	}
 }

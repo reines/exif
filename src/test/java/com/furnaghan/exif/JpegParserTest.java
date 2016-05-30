@@ -19,7 +19,8 @@ public class JpegParserTest {
 				return data;
 			}
 		} );
-		try ( final InputStream in = JpegParserTest.class.getResourceAsStream( "/images/img_1771.jpg" ) ) {
+		try ( final InputStream in = JpegParserTest.class.getResourceAsStream(
+				"/images/sample.jpg" ) ) {
 			parser.process( in, new NoopOutputStream() );
 		}
 	}
