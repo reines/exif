@@ -172,6 +172,22 @@ public class ExifTags {
 		return this;
 	}
 
+	public Optional<String> getMake() {
+		return getFirst( ExifTag.Image_Make );
+	}
+
+	public ExifTags setMake( final String make ) {
+		return set( ExifTag.Image_Make, make );
+	}
+
+	public Optional<String> getModel() {
+		return getFirst( ExifTag.Image_Model );
+	}
+
+	public ExifTags setModel( final String model ) {
+		return set( ExifTag.Image_Model, model );
+	}
+
 	public enum ResolutionUnit {
 		NONE( 0x1 ),
 		INCHES( 0x2 ),

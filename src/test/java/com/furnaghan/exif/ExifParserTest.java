@@ -4,6 +4,7 @@ import static co.unruly.matchers.OptionalMatchers.contains;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.emptyIterable;
 import static org.hamcrest.Matchers.not;
 
 import java.io.File;
@@ -62,8 +63,6 @@ public class ExifParserTest {
 
 		// Read directly
 		assertThat( tags.get( ExifTag.Image_Software ), Matchers.contains( "Picasa" ) );
-		assertThat( tags.get( ExifTag.Image_Make ), Matchers.contains( "LG Electronics" ) );
-		assertThat( tags.get( ExifTag.Image_Model ), Matchers.contains( "LG-H815" ) );
 
 		// Read using some helper methods
 		assertThat( tags.getDate(),
@@ -72,6 +71,8 @@ public class ExifParserTest {
 		assertThat( tags.getXResolution(), contains( 72 ) );
 		assertThat( tags.getYResolution(), contains( 72 ) );
 		assertThat( tags.getResolutionUnit(), contains( ExifTags.ResolutionUnit.INCHES ) );
+		assertThat( tags.getMake(), contains( "LG Electronics" ) );
+		assertThat( tags.getModel(), contains( "LG-H815" ) );
 	}
 
 	@Test
@@ -88,6 +89,9 @@ public class ExifParserTest {
 						ExifTag.Image_XResolution, ExifTag.Image_YResolution,
 						ExifTag.Image_ResolutionUnit ) );
 
+		// Read directly
+		assertThat( tags.get( ExifTag.Image_Software ), emptyIterable() );
+
 		// Read using some helper methods
 		assertThat( tags.getDate(),
 				contains( Date.from( Instant.parse( "2003-12-14T12:01:44.00Z" ) ) ) );
@@ -95,6 +99,8 @@ public class ExifParserTest {
 		assertThat( tags.getXResolution(), contains( 180 ) );
 		assertThat( tags.getYResolution(), contains( 180 ) );
 		assertThat( tags.getResolutionUnit(), contains( ExifTags.ResolutionUnit.INCHES ) );
+		assertThat( tags.getMake(), contains( "Canon" ) );
+		assertThat( tags.getModel(), contains( "Canon PowerShot S40" ) );
 	}
 
 	@Test
@@ -156,7 +162,9 @@ public class ExifParserTest {
 
 		// Check that the date tag is what we set it to be
 		final ExifTags actualTags = ExifParser.read( sampleImage );
-		assertThat( actualTags.keys(), Matchers.contains( ExifTag.Image_Make ) );
+
+		// When we set the tags we also set the ExifTag tag
+		assertThat( actualTags.keys(), Matchers.contains( ExifTag.Image_Make, ExifTag.Image_ExifTag ) );
 		assertThat( actualTags.get( ExifTag.Image_Make ), containsInAnyOrder( test ) );
 	}
 

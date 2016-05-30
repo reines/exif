@@ -1,7 +1,6 @@
 package com.furnaghan.exif;
 
 import static com.google.common.base.Preconditions.checkState;
-import static com.sun.javafx.tools.resource.DeployResource.Type.data;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -185,10 +184,14 @@ public class ExifParser {
 		// Write TIFF marker
 		data.writeShort( 0x002A );
 
-		// TODO: Group the tags by directory...
+		// Write the offset, both as an exif tag and in the TIFF header
+		final int exifOffset = data.offset() + 4;
+		exif.set( ExifTag.Image_ExifTag, exifOffset );
 
-		data.writeInt( data.offset() + 4 );
+		data.writeInt( exifOffset );
 		data.writeShort( exif.count() );
+
+		// TODO: Group the tags by directory...
 
 		int offset = data.offset() + 4 + ( exif.count() * 12 );
 		final List<byte[]> blobs = Lists.newLinkedList();
