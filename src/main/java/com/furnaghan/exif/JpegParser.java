@@ -30,7 +30,7 @@ public class JpegParser {
 	private final Set<Integer> requiredSegments;
 
 	public JpegParser( final SegmentProcessor processor ) {
-		this( processor, Collections.emptySet() );
+		this( processor, Collections.<Integer>emptySet() );
 	}
 
 	public JpegParser( final SegmentProcessor processor, final Set<Integer> requiredSegments ) {

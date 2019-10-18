@@ -1,19 +1,18 @@
 package com.furnaghan.exif;
 
-import static com.google.common.base.Preconditions.checkArgument;
-
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
-import java.util.function.Supplier;
 
 import com.furnaghan.exif.math.Rational;
+import com.google.common.base.Function;
 import com.google.common.base.Joiner;
+import com.google.common.base.Optional;
+import com.google.common.base.Supplier;
 import com.google.common.base.Throwables;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterables;
@@ -22,20 +21,30 @@ import com.google.common.collect.Multimap;
 
 public class ExifTags {
 
-	private static final ThreadLocal<SimpleDateFormat> DATE_FORMAT = ThreadLocal.withInitial(
-			() -> new SimpleDateFormat( "yyyy:MM:dd HH:mm:ss" ) );
+	private static final ThreadLocal<SimpleDateFormat> DATE_FORMAT = new ThreadLocal<SimpleDateFormat>() {
+		@Override
+		protected SimpleDateFormat initialValue() {
+			return new SimpleDateFormat( "yyyy:MM:dd HH:mm:ss" );
+		}
+	};
 
 	public static ExifTags empty() {
-		return new ExifTags( HashMultimap.create() );
+		return new ExifTags( HashMultimap.<ExifTagReference, Object>create() );
 	}
 
 	private static void validateType( final ExifTagReference tag, final Object value ) {
 		final Set<Class<?>> expected = tag.getType().getTypes();
 		final Class<?> actual = value.getClass();
 
-		final boolean valid = expected.stream().anyMatch( e -> e.isAssignableFrom( actual ) );
-		checkArgument( valid, "%s must be of type %s, given %s", tag, expected,
-				actual.getSimpleName() );
+		for ( final Class<?> type : expected ) {
+			if ( type.isAssignableFrom( actual ) ) {
+				return;
+			}
+		}
+
+		throw new IllegalArgumentException(
+				String.format( "%s must be of type %s, given %s", tag, expected,
+						actual.getSimpleName() ) );
 	}
 
 	private final Multimap<ExifTagReference, Object> tags;
@@ -118,7 +127,8 @@ public class ExifTags {
 	}
 
 	public <T> Optional<T> getFirst( final ExifTagReference tag ) {
-		return Optional.ofNullable( Iterables.getFirst( get( tag ), null ) );
+		final Collection<T> values = get( tag );
+		return Optional.fromNullable( Iterables.getFirst( values, null ) );
 	}
 
 	public synchronized ExifTags clear() {
@@ -143,7 +153,12 @@ public class ExifTags {
 
 	public Optional<Orientation> getOrientation() {
 		final Optional<Integer> value = getFirst( ExifTag.Image_Orientation );
-		return value.map( Orientation::fromValue );
+		return value.transform( new Function<Integer, Orientation>() {
+			@Override
+			public Orientation apply( final Integer integer ) {
+				return Orientation.fromValue( integer );
+			}
+		} );
 	}
 
 	public ExifTags setOrientation( final Orientation orientation ) {
@@ -182,17 +197,32 @@ public class ExifTags {
 
 	public Optional<Integer> getXResolution() {
 		final Optional<Rational> xResolution = getFirst( ExifTag.Image_XResolution );
-		return xResolution.map( Rational::intValue );
+		return xResolution.transform( new Function<Rational, Integer>() {
+			@Override
+			public Integer apply( final Rational rational ) {
+				return rational.intValue();
+			}
+		} );
 	}
 
 	public Optional<Integer> getYResolution() {
 		final Optional<Rational> yResolution = getFirst( ExifTag.Image_YResolution );
-		return yResolution.map( Rational::intValue );
+		return yResolution.transform( new Function<Rational, Integer>() {
+			@Override
+			public Integer apply( final Rational rational ) {
+				return rational.intValue();
+			}
+		} );
 	}
 
 	public Optional<ResolutionUnit> getResolutionUnit() {
 		final Optional<Integer> value = getFirst( ExifTag.Image_ResolutionUnit );
-		return value.map( ResolutionUnit::fromValue );
+		return value.transform( new Function<Integer, ResolutionUnit>() {
+			@Override
+			public ResolutionUnit apply( final Integer integer ) {
+				return ResolutionUnit.fromValue( integer );
+			}
+		} );
 	}
 
 	public ExifTags setResolution( final int x, final int y, final ResolutionUnit units ) {
@@ -244,11 +274,14 @@ public class ExifTags {
 
 	public Optional<Date> getDate() {
 		final Optional<String> value = getFirst( ExifTag.Image_DateTime );
-		return value.map( v -> {
-			try {
-				return DATE_FORMAT.get().parse( v );
-			} catch ( ParseException e ) {
-				throw Throwables.propagate( e );
+		return value.transform( new Function<String, Date>() {
+			@Override
+			public Date apply( final String s ) {
+				try {
+					return DATE_FORMAT.get().parse( s );
+				} catch ( ParseException e ) {
+					throw Throwables.propagate( e );
+				}
 			}
 		} );
 	}

@@ -33,7 +33,7 @@ public enum FieldType {
 		@Override
 		public Collection<Object> decode( final StreamReader in, final int length )
 				throws IOException {
-			return Collections.singletonList( in.readString( length / Ascii.size ).trim() );
+			return Collections.<Object>singletonList( in.readString( length / Ascii.size ).trim() );
 		}
 
 		@Override

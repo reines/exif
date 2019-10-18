@@ -4,11 +4,11 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collection;
-import java.util.function.Supplier;
 
 import com.furnaghan.exif.io.DataConversions;
 import com.furnaghan.exif.io.FieldType;
 import com.furnaghan.exif.io.StreamReader;
+import com.google.common.base.Supplier;
 
 public class ExifTagData implements Supplier<ExifTagReference> {
 

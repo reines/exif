@@ -1,8 +1,7 @@
 package com.furnaghan.exif;
 
-import java.util.function.Supplier;
-
 import com.furnaghan.exif.io.FieldType;
+import com.google.common.base.Supplier;
 
 public enum ExifTag implements Supplier<ExifTagReference> {
 	Image_ProcessingSoftware( 0x000b, FieldType.Ascii ),

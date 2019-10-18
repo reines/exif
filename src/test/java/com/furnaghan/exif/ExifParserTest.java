@@ -3,16 +3,15 @@ package com.furnaghan.exif;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.emptyIterable;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
-
-import static co.unruly.matchers.OptionalMatchers.contains;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
-import java.time.Instant;
+import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
 
@@ -62,17 +61,18 @@ public class ExifParserTest {
 						ExifTag.Image_ExifTag.get() ) );
 
 		// Read directly
-		assertThat( tags.get( ExifTag.Image_Software ), Matchers.contains( "Picasa" ) );
+		final Collection<String> imageSoftware = tags.get( ExifTag.Image_Software );
+		assertThat( imageSoftware, Matchers.contains( "Picasa" ) );
 
 		// Read using some helper methods
-		assertThat( tags.getDate(),
-				contains( Date.from( Instant.parse( "2016-03-13T11:49:14.00Z" ) ) ) );
-		assertThat( tags.getOrientation(), contains( ExifTags.Orientation.NORMAL ) );
-		assertThat( tags.getXResolution(), contains( 72 ) );
-		assertThat( tags.getYResolution(), contains( 72 ) );
-		assertThat( tags.getResolutionUnit(), contains( ExifTags.ResolutionUnit.INCHES ) );
-		assertThat( tags.getMake(), contains( "LG Electronics" ) );
-		assertThat( tags.getModel(), contains( "LG-H815" ) );
+		assertThat( tags.getDate().orNull(),
+				is( new Date( 116, Calendar.MARCH, 13, 11, 49, 14 ) ) );
+		assertThat( tags.getOrientation().orNull(), is( ExifTags.Orientation.NORMAL ) );
+		assertThat( tags.getXResolution().orNull(), is( 72 ) );
+		assertThat( tags.getYResolution().orNull(), is( 72 ) );
+		assertThat( tags.getResolutionUnit().orNull(), is( ExifTags.ResolutionUnit.INCHES ) );
+		assertThat( tags.getMake().orNull(), is( "LG Electronics" ) );
+		assertThat( tags.getModel().orNull(), is( "LG-H815" ) );
 	}
 
 	@Test
@@ -93,14 +93,14 @@ public class ExifParserTest {
 		assertThat( tags.get( ExifTag.Image_Software ), emptyIterable() );
 
 		// Read using some helper methods
-		assertThat( tags.getDate(),
-				contains( Date.from( Instant.parse( "2003-12-14T12:01:44.00Z" ) ) ) );
-		assertThat( tags.getOrientation(), contains( ExifTags.Orientation.NORMAL ) );
-		assertThat( tags.getXResolution(), contains( 180 ) );
-		assertThat( tags.getYResolution(), contains( 180 ) );
-		assertThat( tags.getResolutionUnit(), contains( ExifTags.ResolutionUnit.INCHES ) );
-		assertThat( tags.getMake(), contains( "Canon" ) );
-		assertThat( tags.getModel(), contains( "Canon PowerShot S40" ) );
+		assertThat( tags.getDate().orNull(),
+				is( new Date( 103, Calendar.DECEMBER, 14, 12, 1, 44 ) ) );
+		assertThat( tags.getOrientation().orNull(), is( ExifTags.Orientation.NORMAL ) );
+		assertThat( tags.getXResolution().orNull(), is( 180 ) );
+		assertThat( tags.getYResolution().orNull(), is( 180 ) );
+		assertThat( tags.getResolutionUnit().orNull(), is( ExifTags.ResolutionUnit.INCHES ) );
+		assertThat( tags.getMake().orNull(), is( "Canon" ) );
+		assertThat( tags.getModel().orNull(), is( "Canon PowerShot S40" ) );
 	}
 
 	@Test
@@ -110,8 +110,11 @@ public class ExifParserTest {
 		final long originalFileSize = Files.size( sampleImage.toPath() );
 
 		// Update the exif data, overwriting the existing file
-		ExifParser.update( sampleImage, tags -> {
-			tags.set( ExifTag.Image_Make, test );
+		ExifParser.update( sampleImage, new ExifParser.Updater() {
+			@Override
+			public void update( final ExifTags tags ) {
+				tags.set( ExifTag.Image_Make, test );
+			}
 		} );
 
 		// Check the file size changed, this is a rough indication that we actually did modify the file.
@@ -130,8 +133,11 @@ public class ExifParserTest {
 		final long originalFileSize = Files.size( diggerImage.toPath() );
 
 		// Update the exif data, overwriting the existing file
-		ExifParser.update( diggerImage, tags -> {
-			tags.set( ExifTag.Image_Make, test );
+		ExifParser.update( diggerImage, new ExifParser.Updater() {
+			@Override
+			public void update( final ExifTags tags ) {
+				tags.set( ExifTag.Image_Make, test );
+			}
 		} );
 
 		// Check the file size changed, this is a rough indication that we actually did modify the file.
@@ -166,7 +172,8 @@ public class ExifParserTest {
 		// When we set the tags we also set the ExifTag tag
 		assertThat( actualTags.keys(), Matchers.containsInAnyOrder( ExifTag.Image_Make.get(),
 				ExifTag.Image_ExifTag.get() ) );
-		assertThat( actualTags.get( ExifTag.Image_Make ), containsInAnyOrder( test ) );
+		final Collection<String> imageMake = actualTags.get( ExifTag.Image_Make );
+		assertThat( imageMake, containsInAnyOrder( test ) );
 	}
 
 	@Test(expected = IllegalArgumentException.class)

@@ -47,15 +47,18 @@ public class ExifParser {
 		final AtomicReference<ExifTags> exif = new AtomicReference<>( ExifTags.empty() );
 
 		// Process the image, discarding the output
-		new JpegParser( ( marker, data ) -> {
-			if ( marker == EXIF_MARKER ) {
-				try ( final InputStream exifIn = new ByteArrayInputStream( data ) ) {
-					exif.set( readExifData( exifIn ) );
-				} catch ( final Exception e ) {
-					LOG.warn( "Failed to read exif segment", e );
+		new JpegParser( new JpegParser.SegmentProcessor() {
+			@Override
+			public byte[] process( final int marker, final byte[] data ) {
+				if ( marker == EXIF_MARKER ) {
+					try ( final InputStream exifIn = new ByteArrayInputStream( data ) ) {
+						exif.set( readExifData( exifIn ) );
+					} catch ( final Exception e ) {
+						LOG.warn( "Failed to read exif segment", e );
+					}
 				}
+				return data;
 			}
-			return data;
 		}, REQUIRED_MARKERS ).process( in, new NoopOutputStream() );
 
 		return exif.get();
@@ -123,38 +126,47 @@ public class ExifParser {
 	public static void update( final InputStream in, final OutputStream out, final Updater updater )
 			throws IOException {
 		// Process the image, discarding the output
-		new JpegParser( ( marker, data ) -> {
-			if ( marker == EXIF_MARKER ) {
-				try ( final InputStream exifIn = new ByteArrayInputStream( data ) ) {
-					final ExifTags exif = readExifData( exifIn );
-					updater.update( exif );
-					try ( final ByteArrayOutputStream exifOut = new ByteArrayOutputStream() ) {
-						writeExifData( exif, exifOut );
-						return exifOut.toByteArray();
+		new JpegParser( new JpegParser.SegmentProcessor() {
+			@Override
+			public byte[] process( final int marker, final byte[] data ) {
+				if ( marker == EXIF_MARKER ) {
+					try ( final InputStream exifIn = new ByteArrayInputStream( data ) ) {
+						final ExifTags exif = readExifData( exifIn );
+						updater.update( exif );
+						try ( final ByteArrayOutputStream exifOut = new ByteArrayOutputStream() ) {
+							writeExifData( exif, exifOut );
+							return exifOut.toByteArray();
+						}
+					} catch ( final Exception e ) {
+						LOG.warn( "Failed to read exif segment", e );
 					}
-				} catch ( final Exception e ) {
-					LOG.warn( "Failed to read exif segment", e );
 				}
+				return data;
 			}
-			return data;
 		}, REQUIRED_MARKERS ).process( in, out );
 	}
 
 	public static void write( final InputStream in, final OutputStream out, final ExifTags newTags )
 			throws IOException {
-		update( in, out, existingTags -> {
-			existingTags.clear();
-			for ( final Map.Entry<ExifTagReference, Collection<Object>> entry : newTags.entries() ) {
-				existingTags.addAll( entry.getKey(), entry.getValue() );
+		update( in, out, new Updater() {
+			@Override
+			public void update( final ExifTags existingTags ) {
+				existingTags.clear();
+				for ( final Map.Entry<ExifTagReference, Collection<Object>> entry : newTags.entries() ) {
+					existingTags.addAll( entry.getKey(), entry.getValue() );
+				}
 			}
 		} );
 	}
 
 	public static void write( final File file, final ExifTags newTags ) throws IOException {
-		update( file, existingTags -> {
-			existingTags.clear();
-			for ( final Map.Entry<ExifTagReference, Collection<Object>> entry : newTags.entries() ) {
-				existingTags.addAll( entry.getKey(), entry.getValue() );
+		update( file, new Updater() {
+			@Override
+			public void update( final ExifTags existingTags ) {
+				existingTags.clear();
+				for ( final Map.Entry<ExifTagReference, Collection<Object>> entry : newTags.entries() ) {
+					existingTags.addAll( entry.getKey(), entry.getValue() );
+				}
 			}
 		} );
 	}
