@@ -1,19 +1,18 @@
 package com.furnaghan.exif.io;
 
-import static com.google.common.base.Preconditions.checkState;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteOrder;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
 
 import com.furnaghan.exif.math.Rational;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 
 public enum FieldType {
 	Byte( 0x01, 1, new Codec() {
@@ -23,7 +22,8 @@ public enum FieldType {
 		}
 
 		@Override
-		public void encode( final Collection<?> values, final StreamWriter out ) throws IOException {
+		public void encode( final Collection<?> values, final StreamWriter out )
+				throws IOException {
 			for ( final Object value : values ) {
 				out.writeBytes( (byte[]) value );
 			}
@@ -37,7 +37,8 @@ public enum FieldType {
 		}
 
 		@Override
-		public void encode( final Collection<?> values, final StreamWriter out ) throws IOException {
+		public void encode( final Collection<?> values, final StreamWriter out )
+				throws IOException {
 			for ( final Object value : values ) {
 				out.writeString( (String) value + '\n' );
 			}
@@ -46,7 +47,7 @@ public enum FieldType {
 	Short( 0x03, 2, new Codec() {
 		@Override
 		public Collection<?> decode( final StreamReader in, final int length ) throws IOException {
-			final Collection<Integer> values = Lists.newLinkedList();
+			final Collection<Integer> values = new LinkedList<>();
 			while ( in.available() ) {
 				values.add( in.readShort() );
 			}
@@ -54,7 +55,8 @@ public enum FieldType {
 		}
 
 		@Override
-		public void encode( final Collection<?> values, final StreamWriter out ) throws IOException {
+		public void encode( final Collection<?> values, final StreamWriter out )
+				throws IOException {
 			for ( final Object value : values ) {
 				out.writeShort( (int) value );
 			}
@@ -63,7 +65,7 @@ public enum FieldType {
 	Long( 0x04, 4, new Codec() {
 		@Override
 		public Collection<?> decode( final StreamReader in, final int length ) throws IOException {
-			final Collection<Integer> values = Lists.newLinkedList();
+			final Collection<Integer> values = new LinkedList<>();
 			while ( in.available() ) {
 				values.add( in.readInt() );
 			}
@@ -71,7 +73,8 @@ public enum FieldType {
 		}
 
 		@Override
-		public void encode( final Collection<?> values, final StreamWriter out ) throws IOException {
+		public void encode( final Collection<?> values, final StreamWriter out )
+				throws IOException {
 			for ( final Object value : values ) {
 				out.writeInt( (int) value );
 			}
@@ -80,7 +83,7 @@ public enum FieldType {
 	Rational( 0x05, 8, new Codec() {
 		@Override
 		public Collection<?> decode( final StreamReader in, final int length ) throws IOException {
-			final Collection<Rational> values = Lists.newLinkedList();
+			final Collection<Rational> values = new LinkedList<>();
 			while ( in.available() ) {
 				values.add( in.readRational() );
 			}
@@ -88,7 +91,8 @@ public enum FieldType {
 		}
 
 		@Override
-		public void encode( final Collection<?> values, final StreamWriter out ) throws IOException {
+		public void encode( final Collection<?> values, final StreamWriter out )
+				throws IOException {
 			for ( final Object value : values ) {
 				out.writeRational( (Rational) value );
 			}
@@ -102,7 +106,7 @@ public enum FieldType {
 	Float( 0x11, 4, new Codec() {
 		@Override
 		public Collection<?> decode( final StreamReader in, final int length ) throws IOException {
-			final Collection<Float> values = Lists.newLinkedList();
+			final Collection<Float> values = new LinkedList<>();
 			while ( in.available() ) {
 				values.add( in.readFloat() );
 			}
@@ -110,7 +114,8 @@ public enum FieldType {
 		}
 
 		@Override
-		public void encode( final Collection<?> values, final StreamWriter out ) throws IOException {
+		public void encode( final Collection<?> values, final StreamWriter out )
+				throws IOException {
 			for ( final Object value : values ) {
 				out.writeFloat( (float) value );
 			}
@@ -119,7 +124,7 @@ public enum FieldType {
 	Double( 0x12, 8, new Codec() {
 		@Override
 		public Collection<?> decode( final StreamReader in, final int length ) throws IOException {
-			final Collection<Double> values = Lists.newLinkedList();
+			final Collection<Double> values = new LinkedList<>();
 			while ( in.available() ) {
 				values.add( in.readDouble() );
 			}
@@ -127,7 +132,8 @@ public enum FieldType {
 		}
 
 		@Override
-		public void encode( final Collection<?> values, final StreamWriter out ) throws IOException {
+		public void encode( final Collection<?> values, final StreamWriter out )
+				throws IOException {
 			for ( final Object value : values ) {
 				out.writeDouble( (double) value );
 			}
@@ -140,7 +146,7 @@ public enum FieldType {
 	private final Set<Class<?>> types;
 
 	FieldType( final int id, final int size, final Codec converter, final Class<?>... types ) {
-		this( id, size, converter, ImmutableSet.copyOf( types ) );
+		this( id, size, converter, new HashSet<>( Arrays.asList( types ) ) );
 	}
 
 	FieldType( final int id, final int size, final Codec converter, final Set<Class<?>> types ) {
@@ -174,7 +180,7 @@ public enum FieldType {
 		}
 	}
 
-	private static final Map<Integer, FieldType> typesById = Maps.newHashMap();
+	private static final Map<Integer, FieldType> typesById = new HashMap<>();
 
 	static {
 		for ( final FieldType type : FieldType.values() ) {
@@ -183,8 +189,10 @@ public enum FieldType {
 	}
 
 	public static FieldType fromId( final int type ) {
-		checkState( typesById.containsKey( type ),
-				"Unknown field type: " + Integer.toHexString( type ) );
+		if ( !typesById.containsKey( type ) ) {
+			throw new IllegalStateException( "Unknown field type: " + Integer.toHexString( type ) );
+		}
+
 		return typesById.get( type );
 	}
 

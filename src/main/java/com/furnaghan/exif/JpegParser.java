@@ -7,6 +7,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteOrder;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 
 import com.furnaghan.exif.io.StreamReader;
@@ -42,7 +43,7 @@ public class JpegParser {
 		final StreamReader in = new StreamReader( input, ByteOrder.BIG_ENDIAN );
 		final StreamWriter out = new StreamWriter( output, ByteOrder.BIG_ENDIAN );
 
-		final Set<Integer> markers = Sets.newHashSet();
+		final Set<Integer> markers = new HashSet<>();
 
 		checkState( in.readMarker() == SOI_MARKER );
 		out.writeMarker( SOI_MARKER );
