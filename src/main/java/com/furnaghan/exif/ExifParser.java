@@ -23,8 +23,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.furnaghan.exif.io.DataConversions;
-import com.furnaghan.exif.io.FieldType;
 import com.furnaghan.exif.io.NoopOutputStream;
 import com.furnaghan.exif.io.StreamReader;
 import com.furnaghan.exif.io.StreamWriter;
@@ -83,7 +81,7 @@ public class ExifParser {
 		// Validate TIFF marker
 		checkState( data.readShort() == 0x002A, "Invalid TIFF marker" );
 
-		final Collection<ExifTagReference> tags = Lists.newLinkedList();
+		final Collection<ExifTagData> tags = Lists.newLinkedList();
 
 		while ( data.available() ) {
 			// Offset to IFD, seek to it
@@ -95,23 +93,17 @@ public class ExifParser {
 
 			final int tagCount = data.readShort();
 			for ( int tagIndex = 0; tagIndex < tagCount; tagIndex++ ) {
-				tags.add( ExifTagReference.read( data ) );
+				tags.add( ExifTagData.read( data ) );
 			}
 		}
 
 		final ExifTags exif = ExifTags.empty();
 
-		for ( final ExifTagReference tag : tags ) {
-			final int rawId = tag.getId();
-			final ExifTag id = ExifTag.fromId( rawId );
-			if ( id != null ) {
-				try {
-					exif.addAll( id, tag.get( data ) );
-				} catch ( final Exception e ) {
-					LOG.warn( "Skipping invalid tag: " + id, e );
-				}
-			} else {
-				LOG.warn( "Skipping unrecognised tag: " + rawId );
+		for ( final ExifTagData tag : tags ) {
+			try {
+				exif.addAll( tag, tag.get( data ) );
+			} catch ( final Exception e ) {
+				LOG.warn( "Skipping invalid tag: " + tag, e );
 			}
 		}
 
@@ -152,7 +144,7 @@ public class ExifParser {
 			throws IOException {
 		update( in, out, existingTags -> {
 			existingTags.clear();
-			for ( final Map.Entry<ExifTag, Collection<Object>> entry : newTags.entries() ) {
+			for ( final Map.Entry<ExifTagReference, Collection<Object>> entry : newTags.entries() ) {
 				existingTags.addAll( entry.getKey(), entry.getValue() );
 			}
 		} );
@@ -161,7 +153,7 @@ public class ExifParser {
 	public static void write( final File file, final ExifTags newTags ) throws IOException {
 		update( file, existingTags -> {
 			existingTags.clear();
-			for ( final Map.Entry<ExifTag, Collection<Object>> entry : newTags.entries() ) {
+			for ( final Map.Entry<ExifTagReference, Collection<Object>> entry : newTags.entries() ) {
 				existingTags.addAll( entry.getKey(), entry.getValue() );
 			}
 		} );
@@ -195,8 +187,8 @@ public class ExifParser {
 
 		int offset = data.offset() + 4 + ( exif.count() * 12 );
 		final List<byte[]> blobs = Lists.newLinkedList();
-		for ( final Map.Entry<ExifTag, Collection<Object>> entry : exif.entries() ) {
-			final ExifTag tag = entry.getKey();
+		for ( final Map.Entry<ExifTagReference, Collection<Object>> entry : exif.entries() ) {
+			final ExifTagReference tag = entry.getKey();
 			final byte[] bytes = tag.getType().encode( entry.getValue(), data.getByteOrder() );
 
 			data.writeShort( tag.getId() );
@@ -230,47 +222,5 @@ public class ExifParser {
 
 	public interface Updater {
 		void update( final ExifTags tags );
-	}
-
-	private static class ExifTagReference<T> {
-
-		private static ExifTagReference<?> read( final StreamReader data ) throws IOException {
-			return new ExifTagReference( data.readShort(),
-					data.readShort(),
-					data.readInt(),
-					data.readBytes( 4 ) );
-		}
-
-		private final int id;
-		private final FieldType type;
-		private final int count;
-		private final byte[] offset;
-
-		private ExifTagReference( final int id, final int type, final int count, final byte[] offset ) {
-			this.id = id;
-			this.type = FieldType.fromId( type );
-			this.count = count;
-			this.offset = offset;
-		}
-
-		private int getId() {
-			return id;
-		}
-
-		@SuppressWarnings("unchecked")
-		private Collection<T> get( final StreamReader data ) throws IOException {
-			final int length = type.getSize() * count;
-
-			final InputStream bytes;
-			if ( length > 4 ) {
-				data.seek( DataConversions.toInt( offset, 0, data.getByteOrder() ) );
-				bytes = data.limit( length );
-			} else {
-				bytes = new ByteArrayInputStream( offset, 0, length );
-			}
-
-			return (Collection<T>) type.decode( new StreamReader( bytes, data.getByteOrder() ),
-					length );
-		}
 	}
 }

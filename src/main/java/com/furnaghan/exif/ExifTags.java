@@ -10,6 +10,7 @@ import java.util.Date;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import com.furnaghan.exif.math.Rational;
 import com.google.common.base.Joiner;
@@ -21,13 +22,14 @@ import com.google.common.collect.Multimap;
 
 public class ExifTags {
 
-	private static final ThreadLocal<SimpleDateFormat> DATE_FORMAT = ThreadLocal.withInitial( ( ) -> new SimpleDateFormat( "yyyy:MM:dd HH:mm:ss" ) );
+	private static final ThreadLocal<SimpleDateFormat> DATE_FORMAT = ThreadLocal.withInitial(
+			() -> new SimpleDateFormat( "yyyy:MM:dd HH:mm:ss" ) );
 
 	public static ExifTags empty() {
 		return new ExifTags( HashMultimap.create() );
 	}
 
-	private static void validateType( final ExifTag tag, final Object value ) {
+	private static void validateType( final ExifTagReference tag, final Object value ) {
 		final Set<Class<?>> expected = tag.getType().getTypes();
 		final Class<?> actual = value.getClass();
 
@@ -36,9 +38,9 @@ public class ExifTags {
 				actual.getSimpleName() );
 	}
 
-	private final Multimap<ExifTag, Object> tags;
+	private final Multimap<ExifTagReference, Object> tags;
 
-	private ExifTags( final Multimap<ExifTag, Object> tags ) {
+	private ExifTags( final Multimap<ExifTagReference, Object> tags ) {
 		this.tags = tags;
 	}
 
@@ -46,24 +48,39 @@ public class ExifTags {
 		return tags.size();
 	}
 
-	public Collection<Map.Entry<ExifTag, Collection<Object>>> entries() {
+	public Collection<Map.Entry<ExifTagReference, Collection<Object>>> entries() {
 		return tags.asMap().entrySet();
 	}
 
-	public synchronized ExifTags add( final ExifTag tag, final Object value ) {
+	public synchronized ExifTags add( final Supplier<ExifTagReference> supplier,
+			final Object value ) {
+		return add( supplier.get(), value );
+	}
+
+	public synchronized ExifTags add( final ExifTagReference tag, final Object value ) {
 		validateType( tag, value );
 		tags.put( tag, value );
 		return this;
 	}
 
-	public synchronized ExifTags addAll( final ExifTag tag, final Iterable<?> values ) {
+	public synchronized ExifTags addAll( final Supplier<ExifTagReference> supplier,
+			final Iterable<?> values ) {
+		return addAll( supplier.get(), values );
+	}
+
+	public synchronized ExifTags addAll( final ExifTagReference tag, final Iterable<?> values ) {
 		for ( final Object value : values ) {
 			add( tag, value );
 		}
 		return this;
 	}
 
-	public synchronized ExifTags set( final ExifTag tag, final Object value ) {
+	public synchronized ExifTags set( final Supplier<ExifTagReference> supplier,
+			final Object value ) {
+		return set( supplier.get(), value );
+	}
+
+	public synchronized ExifTags set( final ExifTagReference tag, final Object value ) {
 		validateType( tag, value );
 
 		tags.removeAll( tag );
@@ -75,20 +92,32 @@ public class ExifTags {
 		return tags.isEmpty();
 	}
 
-	public Set<ExifTag> keys() {
+	public Set<ExifTagReference> keys() {
 		return Collections.unmodifiableSet( tags.keySet() );
 	}
 
-	public boolean contains( final ExifTag tag ) {
+	public boolean contains( final Supplier<ExifTagReference> supplier ) {
+		return contains( supplier.get() );
+	}
+
+	public boolean contains( final ExifTagReference tag ) {
 		return tags.containsKey( tag );
 	}
 
+	public <T> Collection<T> get( final Supplier<ExifTagReference> supplier ) {
+		return get( supplier.get() );
+	}
+
 	@SuppressWarnings("unchecked")
-	public <T> Collection<T> get( final ExifTag tag ) {
+	public <T> Collection<T> get( final ExifTagReference tag ) {
 		return (Collection<T>) tags.get( tag );
 	}
 
-	public <T> Optional<T> getFirst( final ExifTag tag ) {
+	public <T> Optional<T> getFirst( final Supplier<ExifTagReference> supplier ) {
+		return getFirst( supplier.get() );
+	}
+
+	public <T> Optional<T> getFirst( final ExifTagReference tag ) {
 		return Optional.ofNullable( Iterables.getFirst( get( tag ), null ) );
 	}
 
@@ -100,7 +129,8 @@ public class ExifTags {
 	@Override
 	public String toString() {
 		final StringBuilder builder = new StringBuilder();
-		for ( final Map.Entry<ExifTag, Collection<Object>> entry : tags.asMap().entrySet() ) {
+		for ( final Map.Entry<ExifTagReference, Collection<Object>> entry : tags.asMap()
+				.entrySet() ) {
 			builder.append( entry.getKey() );
 			builder.append( ": " );
 			builder.append( Joiner.on( ',' ).join( entry.getValue() ) );
