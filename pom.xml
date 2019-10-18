@@ -10,7 +10,7 @@
 		<version>7</version>
 	</parent>
 
-	<groupId>com.furnaghan.exif</groupId>
+	<groupId>com.furnaghan</groupId>
 	<artifactId>exif</artifactId>
 	<version>1.0-SNAPSHOT</version>
 
@@ -104,6 +104,11 @@
 
 	<build>
 		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-deploy-plugin</artifactId>
+				<version>2.8.2</version>
+			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>

@@ -1,12 +1,12 @@
 # Exif
 [![Build Status](https://api.travis-ci.org/reines/exif.png?branch=master)](https://travis-ci.org/reines/exif?branch=master)
-[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.furnaghan.exif/exif/badge.png)](https://maven-badges.herokuapp.com/maven-central/com.furnaghan.exif/exif)
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.furnaghan/exif/badge.png)](https://maven-badges.herokuapp.com/maven-central/com.furnaghan/exif)
 
 A simple Exif parser for Java.
 
 ```xml
 <dependency>
-    <groupId>com.furnaghan.exif</groupId>
+    <groupId>com.furnaghan</groupId>
     <artifactId>exif</artifactId>
     <version>...</version>
 </dependency>
