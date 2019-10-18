@@ -1,11 +1,11 @@
 package com.furnaghan.exif;
 
-import static co.unruly.matchers.OptionalMatchers.contains;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.emptyIterable;
 import static org.hamcrest.Matchers.not;
+
+import static co.unruly.matchers.OptionalMatchers.contains;
 
 import java.io.File;
 import java.io.IOException;
@@ -51,15 +51,15 @@ public class ExifParserTest {
 		// Read exif data, don't modify anything
 		final ExifTags tags = ExifParser.read( diggerImage );
 
-		assertThat(
-				tags.keys(),
-				containsInAnyOrder( ExifTag.Image_XResolution, ExifTag.Image_Model,
-						ExifTag.Image_YResolution, ExifTag.Image_GPSTag, ExifTag.Image_DateTime,
-						ExifTag.Image_JPEGInterchangeFormatLength, ExifTag.Image_Make,
-						ExifTag.Image_JPEGInterchangeFormat, ExifTag.Image_Compression,
-						ExifTag.Image_YCbCrPositioning, ExifTag.Image_Software,
-						ExifTag.Image_ResolutionUnit, ExifTag.Image_Orientation,
-						ExifTag.Image_ExifTag) );
+		assertThat( tags.keys(),
+				containsInAnyOrder( ExifTag.Image_XResolution.get(), ExifTag.Image_Model.get(),
+						ExifTag.Image_YResolution.get(), ExifTag.Image_GPSTag.get(),
+						ExifTag.Image_DateTime.get(),
+						ExifTag.Image_JPEGInterchangeFormatLength.get(), ExifTag.Image_Make.get(),
+						ExifTag.Image_JPEGInterchangeFormat.get(), ExifTag.Image_Compression.get(),
+						ExifTag.Image_YCbCrPositioning.get(), ExifTag.Image_Software.get(),
+						ExifTag.Image_ResolutionUnit.get(), ExifTag.Image_Orientation.get(),
+						ExifTag.Image_ExifTag.get() ) );
 
 		// Read directly
 		assertThat( tags.get( ExifTag.Image_Software ), Matchers.contains( "Picasa" ) );
@@ -80,14 +80,14 @@ public class ExifParserTest {
 		// Read exif data, don't modify anything
 		final ExifTags tags = ExifParser.read( sampleImage );
 
-		assertThat(
-				tags.keys(),
-				containsInAnyOrder( ExifTag.Image_ExifTag, ExifTag.Image_DateTime,
-						ExifTag.Image_Orientation, ExifTag.Image_JPEGInterchangeFormat,
-						ExifTag.Image_JPEGInterchangeFormatLength, ExifTag.Image_Compression,
-						ExifTag.Image_YCbCrPositioning, ExifTag.Image_Make, ExifTag.Image_Model,
-						ExifTag.Image_XResolution, ExifTag.Image_YResolution,
-						ExifTag.Image_ResolutionUnit ) );
+		assertThat( tags.keys(),
+				containsInAnyOrder( ExifTag.Image_ExifTag.get(), ExifTag.Image_DateTime.get(),
+						ExifTag.Image_Orientation.get(), ExifTag.Image_JPEGInterchangeFormat.get(),
+						ExifTag.Image_JPEGInterchangeFormatLength.get(),
+						ExifTag.Image_Compression.get(), ExifTag.Image_YCbCrPositioning.get(),
+						ExifTag.Image_Make.get(), ExifTag.Image_Model.get(),
+						ExifTag.Image_XResolution.get(), ExifTag.Image_YResolution.get(),
+						ExifTag.Image_ResolutionUnit.get() ) );
 
 		// Read directly
 		assertThat( tags.get( ExifTag.Image_Software ), emptyIterable() );
@@ -164,7 +164,8 @@ public class ExifParserTest {
 		final ExifTags actualTags = ExifParser.read( sampleImage );
 
 		// When we set the tags we also set the ExifTag tag
-		assertThat( actualTags.keys(), Matchers.contains( ExifTag.Image_Make, ExifTag.Image_ExifTag ) );
+		assertThat( actualTags.keys(), Matchers.containsInAnyOrder( ExifTag.Image_Make.get(),
+				ExifTag.Image_ExifTag.get() ) );
 		assertThat( actualTags.get( ExifTag.Image_Make ), containsInAnyOrder( test ) );
 	}
 
