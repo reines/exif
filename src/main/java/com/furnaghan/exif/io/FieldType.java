@@ -40,7 +40,7 @@ public enum FieldType {
 		public void encode( final Collection<?> values, final StreamWriter out )
 				throws IOException {
 			for ( final Object value : values ) {
-				out.writeString( (String) value + '\n' );
+				out.writeString( value + "\n" );
 			}
 		}
 	}, String.class ),
@@ -102,8 +102,8 @@ public enum FieldType {
 	Undefined( 0x07, 1, Byte.converter, Byte.types ),
 	SShort( 0x08, 2, Short.converter, Short.types ),
 	SLong( 0x09, 4, Long.converter, Long.types ),
-	SRational( 0x10, 8, Rational.converter, Rational.types ),
-	Float( 0x11, 4, new Codec() {
+	SRational( 0x0A, 8, Rational.converter, Rational.types ),
+	Float( 0x0B, 4, new Codec() {
 		@Override
 		public Collection<?> decode( final StreamReader in, final int length ) throws IOException {
 			final Collection<Float> values = new LinkedList<>();
@@ -121,7 +121,7 @@ public enum FieldType {
 			}
 		}
 	}, Float.class, float.class ),
-	Double( 0x12, 8, new Codec() {
+	Double( 0x0C, 8, new Codec() {
 		@Override
 		public Collection<?> decode( final StreamReader in, final int length ) throws IOException {
 			final Collection<Double> values = new LinkedList<>();

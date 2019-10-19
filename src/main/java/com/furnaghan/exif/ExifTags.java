@@ -9,15 +9,19 @@ import java.util.Map;
 import java.util.Set;
 
 import com.furnaghan.exif.math.Rational;
+import com.furnaghan.exif.tag.Image;
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
 import com.google.common.base.Supplier;
 import com.google.common.base.Throwables;
+import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
+import com.google.common.collect.Table;
+import com.google.common.collect.Tables;
 
 public class ExifTags {
 
@@ -57,8 +61,19 @@ public class ExifTags {
 		return tags.size();
 	}
 
-	public Collection<Map.Entry<ExifTagReference, Collection<Object>>> entries() {
-		return tags.asMap().entrySet();
+	public Table<ImageFileDirectory, ExifTagReference, Collection<Object>> asTable() {
+		final Table<ImageFileDirectory, ExifTagReference, Collection<Object>> table = HashBasedTable
+				.create();
+
+		for ( final Map.Entry<ExifTagReference, Collection<Object>> entry : tags.asMap()
+				.entrySet() ) {
+			final ExifTagReference tag = entry.getKey();
+			final Collection<Object> values = entry.getValue();
+
+			table.put( tag.getIfd(), tag, values );
+		}
+
+		return Tables.unmodifiableTable( table );
 	}
 
 	public synchronized ExifTags add( final Supplier<ExifTagReference> supplier,
@@ -113,6 +128,15 @@ public class ExifTags {
 		return tags.containsKey( tag );
 	}
 
+	public <T> Collection<T> remove( final Supplier<ExifTagReference> supplier ) {
+		return remove( supplier.get() );
+	}
+
+	@SuppressWarnings("unchecked")
+	public <T> Collection<T> remove( final ExifTagReference tag ) {
+		return (Collection<T>) tags.removeAll( tag );
+	}
+
 	public <T> Collection<T> get( final Supplier<ExifTagReference> supplier ) {
 		return get( supplier.get() );
 	}
@@ -152,7 +176,7 @@ public class ExifTags {
 	// Helpers for common tags
 
 	public Optional<Orientation> getOrientation() {
-		final Optional<Integer> value = getFirst( ExifTag.Image_Orientation );
+		final Optional<Integer> value = getFirst( Image.Orientation );
 		return value.transform( new Function<Integer, Orientation>() {
 			@Override
 			public Orientation apply( final Integer integer ) {
@@ -162,7 +186,7 @@ public class ExifTags {
 	}
 
 	public ExifTags setOrientation( final Orientation orientation ) {
-		set( ExifTag.Image_Orientation, orientation.value );
+		set( Image.Orientation, orientation.value );
 		return this;
 	}
 
@@ -196,7 +220,7 @@ public class ExifTags {
 	}
 
 	public Optional<Integer> getXResolution() {
-		final Optional<Rational> xResolution = getFirst( ExifTag.Image_XResolution );
+		final Optional<Rational> xResolution = getFirst( Image.XResolution );
 		return xResolution.transform( new Function<Rational, Integer>() {
 			@Override
 			public Integer apply( final Rational rational ) {
@@ -206,7 +230,7 @@ public class ExifTags {
 	}
 
 	public Optional<Integer> getYResolution() {
-		final Optional<Rational> yResolution = getFirst( ExifTag.Image_YResolution );
+		final Optional<Rational> yResolution = getFirst( Image.YResolution );
 		return yResolution.transform( new Function<Rational, Integer>() {
 			@Override
 			public Integer apply( final Rational rational ) {
@@ -216,7 +240,7 @@ public class ExifTags {
 	}
 
 	public Optional<ResolutionUnit> getResolutionUnit() {
-		final Optional<Integer> value = getFirst( ExifTag.Image_ResolutionUnit );
+		final Optional<Integer> value = getFirst( Image.ResolutionUnit );
 		return value.transform( new Function<Integer, ResolutionUnit>() {
 			@Override
 			public ResolutionUnit apply( final Integer integer ) {
@@ -226,26 +250,26 @@ public class ExifTags {
 	}
 
 	public ExifTags setResolution( final int x, final int y, final ResolutionUnit units ) {
-		set( ExifTag.Image_XResolution, Rational.real( x ) );
-		set( ExifTag.Image_YResolution, Rational.real( y ) );
-		set( ExifTag.Image_ResolutionUnit, units.value );
+		set( Image.XResolution, Rational.real( x ) );
+		set( Image.YResolution, Rational.real( y ) );
+		set( Image.ResolutionUnit, units.value );
 		return this;
 	}
 
 	public Optional<String> getMake() {
-		return getFirst( ExifTag.Image_Make );
+		return getFirst( Image.Make );
 	}
 
 	public ExifTags setMake( final String make ) {
-		return set( ExifTag.Image_Make, make );
+		return set( Image.Make, make );
 	}
 
 	public Optional<String> getModel() {
-		return getFirst( ExifTag.Image_Model );
+		return getFirst( Image.Model );
 	}
 
 	public ExifTags setModel( final String model ) {
-		return set( ExifTag.Image_Model, model );
+		return set( Image.Model, model );
 	}
 
 	public enum ResolutionUnit {
@@ -273,7 +297,7 @@ public class ExifTags {
 	}
 
 	public Optional<Date> getDate() {
-		final Optional<String> value = getFirst( ExifTag.Image_DateTime );
+		final Optional<String> value = getFirst( Image.DateTime );
 		return value.transform( new Function<String, Date>() {
 			@Override
 			public Date apply( final String s ) {
@@ -287,7 +311,7 @@ public class ExifTags {
 	}
 
 	public ExifTags setDate( final Date date ) {
-		set( ExifTag.Image_DateTime, DATE_FORMAT.get().format( date ) );
+		set( Image.DateTime, DATE_FORMAT.get().format( date ) );
 		return this;
 	}
 }

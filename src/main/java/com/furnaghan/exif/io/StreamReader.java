@@ -4,25 +4,36 @@ import static com.google.common.base.Preconditions.checkState;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteOrder;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.furnaghan.exif.math.Rational;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.ByteStreams;
 
-public class StreamReader {
+public class StreamReader implements Closeable {
 
+	private static final Logger LOG = LoggerFactory.getLogger( StreamReader.class );
 	private static final Map<Integer, ByteOrder> BYTE_ORDERS = ImmutableMap.of( 0x4949,
 			ByteOrder.LITTLE_ENDIAN, 0x4D4D, ByteOrder.BIG_ENDIAN );
 
 	private final BufferedInputStream in;
+	private final boolean verbose;
 	private ByteOrder byteOrder;
 
 	public StreamReader( final InputStream in, final ByteOrder byteOrder ) {
+		this( in, byteOrder, false );
+	}
+
+	public StreamReader( final InputStream in, final ByteOrder byteOrder, final boolean verbose ) {
 		this.in = new BufferedInputStream( in );
+		this.verbose = verbose;
 		this.byteOrder = byteOrder;
 	}
 
@@ -43,15 +54,22 @@ public class StreamReader {
 	}
 
 	public byte[] readBytes() throws IOException {
-		try ( final ByteArrayOutputStream bytes = new ByteArrayOutputStream() ) {
-			ByteStreams.copy( in, bytes );
-			return bytes.toByteArray();
+		try ( final ByteArrayOutputStream out = new ByteArrayOutputStream() ) {
+			ByteStreams.copy( in, out );
+			final byte[] bytes = out.toByteArray();
+			if ( verbose ) {
+				LOG.error( "read: {}", bytes );
+			}
+			return bytes;
 		}
 	}
 
 	public byte[] readBytes( final int length ) throws IOException {
 		final byte[] bytes = new byte[length];
 		ByteStreams.readFully( in, bytes, 0, length );
+		if ( verbose ) {
+			LOG.error( "read: {}", bytes );
+		}
 		return bytes;
 	}
 
@@ -98,8 +116,13 @@ public class StreamReader {
 		in.mark( Integer.MAX_VALUE );
 	}
 
-	public void seek( final int offset ) throws IOException {
+	public void seek( final long offset ) throws IOException {
 		in.reset();
 		ByteStreams.skipFully( in, offset );
+	}
+
+	@Override
+	public void close() throws IOException {
+		in.close();
 	}
 }

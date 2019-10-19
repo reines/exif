@@ -12,8 +12,9 @@ import com.google.common.base.Supplier;
 
 public class ExifTagData implements Supplier<ExifTagReference> {
 
-	static ExifTagData read( final StreamReader data ) throws IOException {
-		return new ExifTagData( data.readShort(), data.readShort(), data.readInt(),
+	public static ExifTagData read( final ImageFileDirectory ifd, final StreamReader data )
+			throws IOException {
+		return new ExifTagData( data.readShort(), ifd, data.readShort(), data.readInt(),
 				data.readBytes( 4 ) );
 	}
 
@@ -21,8 +22,9 @@ public class ExifTagData implements Supplier<ExifTagReference> {
 	private final int count;
 	private final byte[] offset;
 
-	private ExifTagData( final int id, final int type, final int count, final byte[] offset ) {
-		this.reference = new ExifTagReference( id, FieldType.fromId( type ) );
+	private ExifTagData( final int id, final ImageFileDirectory ifd, final int type,
+			final int count, final byte[] offset ) {
+		this.reference = new ExifTagReference( id, ifd, FieldType.fromId( type ) );
 		this.count = count;
 		this.offset = offset;
 	}
@@ -32,7 +34,8 @@ public class ExifTagData implements Supplier<ExifTagReference> {
 		return reference;
 	}
 
-	Collection<?> get( final StreamReader data ) throws IOException {
+	@SuppressWarnings("unchecked")
+	public <T> Collection<T> get( final StreamReader data ) throws IOException {
 		final int length = reference.getType().getSize() * count;
 
 		final InputStream bytes;
@@ -43,6 +46,7 @@ public class ExifTagData implements Supplier<ExifTagReference> {
 			bytes = new ByteArrayInputStream( offset, 0, length );
 		}
 
-		return reference.getType().decode( new StreamReader( bytes, data.getByteOrder() ), length );
+		return (Collection<T>) reference.getType()
+				.decode( new StreamReader( bytes, data.getByteOrder() ), length );
 	}
 }

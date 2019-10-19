@@ -7,8 +7,11 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.Calendar;
@@ -20,6 +23,12 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+
+import com.furnaghan.exif.parser.ExifParser;
+import com.furnaghan.exif.tag.Exif;
+import com.furnaghan.exif.tag.GPSInfo;
+import com.furnaghan.exif.tag.Image;
+import com.furnaghan.exif.tag.Iop;
 
 public class ExifParserTest {
 
@@ -45,23 +54,33 @@ public class ExifParserTest {
 		diggerImage = copyFile( "/images/digger.jpg" );
 	}
 
+	// TODO: remove
+	@Test
+	public void bla() throws IOException {
+		try ( final InputStream in = new FileInputStream( sampleImage ) ) {
+			try ( final OutputStream out = new FileOutputStream(
+					"/Users/jamiefurnaghan/Desktop/bla.jpg" ) ) {
+				ExifParser.copy( in, out );
+			}
+		}
+	}
+
 	@Test
 	public void testReadExistingImagePicasaHasExpectedTags() throws IOException {
 		// Read exif data, don't modify anything
 		final ExifTags tags = ExifParser.read( diggerImage );
 
-		assertThat( tags.keys(),
-				containsInAnyOrder( ExifTag.Image_XResolution.get(), ExifTag.Image_Model.get(),
-						ExifTag.Image_YResolution.get(), ExifTag.Image_GPSTag.get(),
-						ExifTag.Image_DateTime.get(),
-						ExifTag.Image_JPEGInterchangeFormatLength.get(), ExifTag.Image_Make.get(),
-						ExifTag.Image_JPEGInterchangeFormat.get(), ExifTag.Image_Compression.get(),
-						ExifTag.Image_YCbCrPositioning.get(), ExifTag.Image_Software.get(),
-						ExifTag.Image_ResolutionUnit.get(), ExifTag.Image_Orientation.get(),
-						ExifTag.Image_ExifTag.get() ) );
+		// @formatter:off
+		assertThat( tags.keys(), containsInAnyOrder(
+				Image.XResolution.get(), Image.Model.get(), Image.YResolution.get(), Image.DateTime.get(), Image.JPEGInterchangeFormatLength.get(), Image.Make.get(), Image.JPEGInterchangeFormat.get(), Image.Compression.get(), Image.YCbCrPositioning.get(), Image.Software.get(), Image.ResolutionUnit.get(), Image.Orientation.get(),
+				Exif.ColorSpace.get(), Exif.ExposureTime.get(), Exif.SubSecTimeOriginal.get(), Exif.FlashpixVersion.get(), Exif.ExifVersion.get(), Exif.ShutterSpeedValue.get(), Exif.PixelXDimension.get(), Exif.PixelYDimension.get(), Exif.WhiteBalance.get(), Exif.MeteringMode.get(), Exif.DateTimeDigitized.get(), Exif.SubSecTime.get(), Exif.SceneType.get(), Exif.ComponentsConfiguration.get(), Exif.SensingMethod.get(), Exif.DigitalZoomRatio.get(), Exif.FNumber.get(), Exif.ExposureMode.get(), Exif.ISOSpeedRatings.get(), Exif.SceneCaptureType.get(), Exif.UserComment.get(), Exif.BrightnessValue.get(), Exif.ImageUniqueID.get(), Exif.ExposureProgram.get(), Exif.SubSecTimeDigitized.get(), Exif.Flash.get(), Exif.FocalLength.get(), Exif.ExposureBiasValue.get(), Exif.ApertureValue.get(), Exif.DateTimeOriginal.get(),
+				Iop.InteroperabilityVersion.get(), Iop.InteroperabilityIndex.get(),
+				GPSInfo.GPSDateStamp.get(), GPSInfo.GPSLongitude.get(), GPSInfo.GPSLatitude.get(), GPSInfo.GPSVersionID.get(), GPSInfo.GPSTimeStamp.get(), GPSInfo.GPSAltitude.get(), GPSInfo.GPSLongitudeRef.get(), GPSInfo.GPSLatitudeRef.get(), GPSInfo.GPSAltitudeRef.get()
+		) );
+		// @formatter:on
 
 		// Read directly
-		final Collection<String> imageSoftware = tags.get( ExifTag.Image_Software );
+		final Collection<String> imageSoftware = tags.get( Image.Software );
 		assertThat( imageSoftware, Matchers.contains( "Picasa" ) );
 
 		// Read using some helper methods
@@ -80,17 +99,16 @@ public class ExifParserTest {
 		// Read exif data, don't modify anything
 		final ExifTags tags = ExifParser.read( sampleImage );
 
-		assertThat( tags.keys(),
-				containsInAnyOrder( ExifTag.Image_ExifTag.get(), ExifTag.Image_DateTime.get(),
-						ExifTag.Image_Orientation.get(), ExifTag.Image_JPEGInterchangeFormat.get(),
-						ExifTag.Image_JPEGInterchangeFormatLength.get(),
-						ExifTag.Image_Compression.get(), ExifTag.Image_YCbCrPositioning.get(),
-						ExifTag.Image_Make.get(), ExifTag.Image_Model.get(),
-						ExifTag.Image_XResolution.get(), ExifTag.Image_YResolution.get(),
-						ExifTag.Image_ResolutionUnit.get() ) );
+		// @formatter:off
+		assertThat( tags.keys(), containsInAnyOrder(
+				Image.DateTime.get(), Image.Orientation.get(), Image.Compression.get(), Image.Make.get(), Image.Model.get(), Image.XResolution.get(), Image.YResolution.get(), Image.ResolutionUnit.get(), Image.JPEGInterchangeFormat.get(), Image.JPEGInterchangeFormatLength.get(), Image.YCbCrPositioning.get(),
+				Iop.RelatedImageWidth.get(), Iop.RelatedImageLength.get(), Iop.InteroperabilityIndex.get(), Iop.InteroperabilityVersion.get(),
+				Exif.Flash.get(), Exif.MeteringMode.get(), Exif.WhiteBalance.get(), Exif.ShutterSpeedValue.get(), Exif.DigitalZoomRatio.get(), Exif.CompressedBitsPerPixel.get(), Exif.ApertureValue.get(), Exif.ComponentsConfiguration.get(), Exif.ColorSpace.get(), Exif.CustomRendered.get(), Exif.ExposureMode.get(), Exif.FocalPlaneResolutionUnit.get(), Exif.FocalPlaneXResolution.get(), Exif.FocalPlaneYResolution.get(), Exif.MaxApertureValue.get(), Exif.ExposureTime.get(), Exif.SceneCaptureType.get(), Exif.DateTimeOriginal.get(), Exif.UserComment.get(), Exif.FileSource.get(), Exif.FlashpixVersion.get(), Exif.ExifVersion.get(), Exif.PixelXDimension.get(), Exif.PixelYDimension.get(), Exif.MakerNote.get(), Exif.DateTimeDigitized.get(), Exif.ExposureBiasValue.get(), Exif.FocalLength.get(), Exif.SensingMethod.get(), Exif.FNumber.get()
+		) );
+		// @formatter:on
 
 		// Read directly
-		assertThat( tags.get( ExifTag.Image_Software ), emptyIterable() );
+		assertThat( tags.get( Image.Software ), emptyIterable() );
 
 		// Read using some helper methods
 		assertThat( tags.getDate().orNull(),
@@ -112,8 +130,9 @@ public class ExifParserTest {
 		// Update the exif data, overwriting the existing file
 		ExifParser.update( sampleImage, new ExifParser.Updater() {
 			@Override
-			public void update( final ExifTags tags ) {
-				tags.set( ExifTag.Image_Make, test );
+			public ExifTags update( final ExifTags tags ) {
+				tags.set( Image.Make, test );
+				return tags;
 			}
 		} );
 
@@ -122,7 +141,7 @@ public class ExifParserTest {
 		assertThat( newFileSize, not( originalFileSize ) );
 
 		// Check that the make tag is what we set it to be
-		final Collection<String> make = ExifParser.read( sampleImage ).get( ExifTag.Image_Make );
+		final Collection<String> make = ExifParser.read( sampleImage ).get( Image.Make );
 		assertThat( make, Matchers.contains( test ) );
 	}
 
@@ -135,18 +154,19 @@ public class ExifParserTest {
 		// Update the exif data, overwriting the existing file
 		ExifParser.update( diggerImage, new ExifParser.Updater() {
 			@Override
-			public void update( final ExifTags tags ) {
-				tags.set( ExifTag.Image_Make, test );
+			public ExifTags update( final ExifTags tags ) {
+				tags.set( Image.Make, test );
+				return tags;
 			}
 		} );
+
+		// Check that the make tag is what we set it to be
+		final Collection<String> make = ExifParser.read( diggerImage ).get( Image.Make );
+		assertThat( make, Matchers.contains( test ) );
 
 		// Check the file size changed, this is a rough indication that we actually did modify the file.
 		final long newFileSize = Files.size( diggerImage.toPath() );
 		assertThat( newFileSize, not( originalFileSize ) );
-
-		// Check that the make tag is what we set it to be
-		final Collection<String> make = ExifParser.read( diggerImage ).get( ExifTag.Image_Make );
-		assertThat( make, Matchers.contains( test ) );
 	}
 
 	@Test
@@ -157,7 +177,7 @@ public class ExifParserTest {
 
 		// Create the exif data ourselves
 		final ExifTags tags = ExifTags.empty();
-		tags.set( ExifTag.Image_Make, test );
+		tags.set( Image.Make, test );
 
 		// Set the exif data, throwing away any existing, and overwriting the existing file
 		ExifParser.write( sampleImage, tags );
@@ -169,24 +189,21 @@ public class ExifParserTest {
 		// Check that the date tag is what we set it to be
 		final ExifTags actualTags = ExifParser.read( sampleImage );
 
-		// When we set the tags we also set the ExifTag tag
-		assertThat( actualTags.keys(), Matchers.containsInAnyOrder( ExifTag.Image_Make.get(),
-				ExifTag.Image_ExifTag.get() ) );
-		final Collection<String> imageMake = actualTags.get( ExifTag.Image_Make );
+		final Collection<String> imageMake = actualTags.get( Image.Make );
 		assertThat( imageMake, containsInAnyOrder( test ) );
 	}
 
 	@Test(expected = IllegalArgumentException.class)
 	public void testSetWrongDataTypeForNumericField() throws IOException {
 		final ExifTags tags = ExifTags.empty();
-		tags.set( ExifTag.Image_Orientation, "test" );
+		tags.set( Image.Orientation, "test" );
 		ExifParser.write( sampleImage, tags );
 	}
 
 	@Test(expected = IllegalArgumentException.class)
 	public void testSetWrongDataTypeForStringField() throws IOException {
 		final ExifTags tags = ExifTags.empty();
-		tags.set( ExifTag.Image_DateTime, new byte[0] );
+		tags.set( Image.DateTime, new byte[0] );
 		ExifParser.write( sampleImage, tags );
 	}
 }

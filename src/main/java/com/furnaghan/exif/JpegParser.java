@@ -10,6 +10,9 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.furnaghan.exif.io.StreamReader;
 import com.furnaghan.exif.io.StreamWriter;
 import com.google.common.collect.Sets;
@@ -19,6 +22,8 @@ public class JpegParser {
 	public interface SegmentProcessor {
 		byte[] process( final int marker, final byte[] data ) throws IOException;
 	}
+
+	private static final Logger LOG = LoggerFactory.getLogger( JpegParser.class );
 
 	// Start of Image
 	private static final int SOI_MARKER = 0xFFD8;
@@ -70,6 +75,7 @@ public class JpegParser {
 			throws IOException {
 		final byte[] bytes = processor.process( marker, input );
 		if ( bytes.length > 0 ) {
+			LOG.info( "Writing {} bytes at segment {}", bytes.length, marker );
 			out.writeMarker( marker );
 			out.writeShort( bytes.length + 2 );
 			out.writeBytes( bytes );
@@ -79,6 +85,7 @@ public class JpegParser {
 	private void processImage( final StreamWriter out, final int marker, final byte[] input )
 			throws IOException {
 		final byte[] bytes = processor.process( marker, input );
+		LOG.info( "Writing {} bytes at segment {}", bytes.length, marker );
 		out.writeMarker( marker );
 		out.writeBytes( bytes );
 	}
