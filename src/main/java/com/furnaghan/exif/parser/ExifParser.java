@@ -96,15 +96,6 @@ public class ExifParser {
 		return exif.get();
 	}
 
-	public static void copy( final InputStream in, final OutputStream out ) throws IOException {
-		update( in, out, new Updater() {
-			@Override
-			public ExifTags update( final ExifTags tags ) {
-				return tags;
-			}
-		} );
-	}
-
 	public static void update( final File file, final Updater updater ) throws IOException {
 		final Path tempFile = Files.createTempFile( "exif", "jpg" );
 		try ( final InputStream in = new FileInputStream( file ) ) {
