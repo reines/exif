@@ -15,31 +15,25 @@ import org.slf4j.LoggerFactory;
 
 import com.furnaghan.exif.io.StreamReader;
 import com.furnaghan.exif.io.StreamWriter;
+import com.furnaghan.exif.jpeg.Marker;
 import com.google.common.collect.Sets;
 
 public class JpegParser {
 
 	public interface SegmentProcessor {
-		byte[] process( final int marker, final byte[] data ) throws IOException;
+		byte[] process( final Marker marker, final byte[] data ) throws IOException;
 	}
 
 	private static final Logger LOG = LoggerFactory.getLogger( JpegParser.class );
 
-	// Start of Image
-	private static final int SOI_MARKER = 0xFFD8;
-	// End of Image
-	private static final int EOI_MARKER = 0xFFD9;
-	// Start of Scan
-	private static final int SOS_MARKER = 0xFFDA;
-
 	private final SegmentProcessor processor;
-	private final Set<Integer> requiredSegments;
+	private final Set<Marker> requiredSegments;
 
 	public JpegParser( final SegmentProcessor processor ) {
-		this( processor, Collections.<Integer>emptySet() );
+		this( processor, Collections.<Marker>emptySet() );
 	}
 
-	public JpegParser( final SegmentProcessor processor, final Set<Integer> requiredSegments ) {
+	public JpegParser( final SegmentProcessor processor, final Set<Marker> requiredSegments ) {
 		this.processor = processor;
 		this.requiredSegments = requiredSegments;
 	}
@@ -48,17 +42,17 @@ public class JpegParser {
 		final StreamReader in = new StreamReader( input, ByteOrder.BIG_ENDIAN );
 		final StreamWriter out = new StreamWriter( output, ByteOrder.BIG_ENDIAN );
 
-		final Set<Integer> markers = new HashSet<>();
+		final Set<Marker> markers = new HashSet<>();
 
-		checkState( in.readMarker() == SOI_MARKER );
-		out.writeMarker( SOI_MARKER );
+		checkState( in.readMarker() == Marker.SOI );
+		out.writeMarker( Marker.SOI );
 
 		while ( in.available() ) {
-			final int marker = in.readMarker();
+			final Marker marker = in.readMarker();
 			markers.add( marker );
 
-			if ( marker == EOI_MARKER || marker == SOS_MARKER ) {
-				for ( final int newMarker : Sets.difference( requiredSegments, markers ) ) {
+			if ( marker == Marker.EOI || marker == Marker.SOS ) {
+				for ( final Marker newMarker : Sets.difference( requiredSegments, markers ) ) {
 					processSegment( out, newMarker, new byte[0] );
 				}
 
@@ -71,7 +65,7 @@ public class JpegParser {
 		}
 	}
 
-	private void processSegment( final StreamWriter out, final int marker, final byte[] input )
+	private void processSegment( final StreamWriter out, final Marker marker, final byte[] input )
 			throws IOException {
 		final byte[] bytes = processor.process( marker, input );
 		if ( bytes.length > 0 ) {
@@ -82,7 +76,7 @@ public class JpegParser {
 		}
 	}
 
-	private void processImage( final StreamWriter out, final int marker, final byte[] input )
+	private void processImage( final StreamWriter out, final Marker marker, final byte[] input )
 			throws IOException {
 		final byte[] bytes = processor.process( marker, input );
 		LOG.info( "Writing {} bytes at segment {}", bytes.length, marker );

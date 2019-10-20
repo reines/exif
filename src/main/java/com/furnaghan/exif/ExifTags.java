@@ -5,6 +5,8 @@ import java.text.SimpleDateFormat;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
 
@@ -15,13 +17,10 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
 import com.google.common.base.Supplier;
 import com.google.common.base.Throwables;
-import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
-import com.google.common.collect.Table;
-import com.google.common.collect.Tables;
 
 public class ExifTags {
 
@@ -33,7 +32,7 @@ public class ExifTags {
 	};
 
 	public static ExifTags empty() {
-		return new ExifTags( HashMultimap.<ExifTagReference, Object>create() );
+		return new ExifTags();
 	}
 
 	private static void validateType( final ExifTagReference tag, final Object value ) {
@@ -51,29 +50,20 @@ public class ExifTags {
 						actual.getSimpleName() ) );
 	}
 
-	private final Multimap<ExifTagReference, Object> tags;
+	private final Map<ImageFileDirectory, Multimap<ExifTagReference, Object>> tags;
+	private final Collection<byte[]> thumbnails;
 
-	private ExifTags( final Multimap<ExifTagReference, Object> tags ) {
-		this.tags = tags;
-	}
+	private ExifTags() {
+		this.tags = new HashMap<>();
+		this.thumbnails = new LinkedList<>();
 
-	public int count() {
-		return tags.size();
-	}
-
-	public Table<ImageFileDirectory, ExifTagReference, Collection<Object>> asTable() {
-		final Table<ImageFileDirectory, ExifTagReference, Collection<Object>> table = HashBasedTable
-				.create();
-
-		for ( final Map.Entry<ExifTagReference, Collection<Object>> entry : tags.asMap()
-				.entrySet() ) {
-			final ExifTagReference tag = entry.getKey();
-			final Collection<Object> values = entry.getValue();
-
-			table.put( tag.getIfd(), tag, values );
+		for ( final ImageFileDirectory ifd : ImageFileDirectory.values() ) {
+			tags.put( ifd, HashMultimap.<ExifTagReference, Object>create() );
 		}
+	}
 
-		return Tables.unmodifiableTable( table );
+	public Map<ExifTagReference, Collection<Object>> getDirectory( final ImageFileDirectory ifd ) {
+		return Collections.unmodifiableMap( tags.get( ifd ).asMap() );
 	}
 
 	public synchronized ExifTags add( final Supplier<ExifTagReference> supplier,
@@ -83,7 +73,7 @@ public class ExifTags {
 
 	public synchronized ExifTags add( final ExifTagReference tag, final Object value ) {
 		validateType( tag, value );
-		tags.put( tag, value );
+		tags.get( tag.getIfd() ).put( tag, value );
 		return this;
 	}
 
@@ -107,17 +97,9 @@ public class ExifTags {
 	public synchronized ExifTags set( final ExifTagReference tag, final Object value ) {
 		validateType( tag, value );
 
-		tags.removeAll( tag );
-		tags.put( tag, value );
+		tags.get( tag.getIfd() ).removeAll( tag );
+		tags.get( tag.getIfd() ).put( tag, value );
 		return this;
-	}
-
-	public boolean isEmpty() {
-		return tags.isEmpty();
-	}
-
-	public Set<ExifTagReference> keys() {
-		return Collections.unmodifiableSet( tags.keySet() );
 	}
 
 	public boolean contains( final Supplier<ExifTagReference> supplier ) {
@@ -125,7 +107,7 @@ public class ExifTags {
 	}
 
 	public boolean contains( final ExifTagReference tag ) {
-		return tags.containsKey( tag );
+		return tags.get( tag.getIfd() ).containsKey( tag );
 	}
 
 	public <T> Collection<T> remove( final Supplier<ExifTagReference> supplier ) {
@@ -134,7 +116,7 @@ public class ExifTags {
 
 	@SuppressWarnings("unchecked")
 	public <T> Collection<T> remove( final ExifTagReference tag ) {
-		return (Collection<T>) tags.removeAll( tag );
+		return (Collection<T>) tags.get( tag.getIfd() ).removeAll( tag );
 	}
 
 	public <T> Collection<T> get( final Supplier<ExifTagReference> supplier ) {
@@ -143,7 +125,7 @@ public class ExifTags {
 
 	@SuppressWarnings("unchecked")
 	public <T> Collection<T> get( final ExifTagReference tag ) {
-		return (Collection<T>) tags.get( tag );
+		return (Collection<T>) tags.get( tag.getIfd() ).get( tag );
 	}
 
 	public <T> Optional<T> getFirst( final Supplier<ExifTagReference> supplier ) {
@@ -156,19 +138,36 @@ public class ExifTags {
 	}
 
 	public synchronized ExifTags clear() {
-		tags.clear();
+		for ( final Multimap<ExifTagReference, Object> directory : tags.values() ) {
+			directory.clear();
+		}
 		return this;
+	}
+
+	public synchronized ExifTags addThumbnail( final byte[] bytes ) {
+		thumbnails.add( bytes );
+		return this;
+	}
+
+	public boolean hasThumbnails() {
+		return !thumbnails.isEmpty();
+	}
+
+	public Collection<byte[]> getThumbnails() {
+		return Collections.unmodifiableCollection( thumbnails );
 	}
 
 	@Override
 	public String toString() {
 		final StringBuilder builder = new StringBuilder();
-		for ( final Map.Entry<ExifTagReference, Collection<Object>> entry : tags.asMap()
-				.entrySet() ) {
-			builder.append( entry.getKey() );
-			builder.append( ": " );
-			builder.append( Joiner.on( ',' ).join( entry.getValue() ) );
-			builder.append( '\n' );
+		for ( final Multimap<ExifTagReference, Object> directory : tags.values() ) {
+			for ( final Map.Entry<ExifTagReference, Collection<Object>> entry : directory.asMap()
+					.entrySet() ) {
+				builder.append( entry.getKey() );
+				builder.append( ": " );
+				builder.append( Joiner.on( ',' ).join( entry.getValue() ) );
+				builder.append( '\n' );
+			}
 		}
 		return builder.toString().trim();
 	}

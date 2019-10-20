@@ -13,6 +13,7 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.furnaghan.exif.jpeg.Marker;
 import com.furnaghan.exif.math.Rational;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.CountingOutputStream;
@@ -93,8 +94,8 @@ public class StreamWriter implements Closeable {
 		writeShort( value );
 	}
 
-	public void writeMarker( final int marker ) throws IOException {
-		writeShort( marker );
+	public void writeMarker( final Marker marker ) throws IOException {
+		writeShort( marker.getId() );
 	}
 
 	@Override

@@ -22,13 +22,14 @@ import com.furnaghan.exif.ExifTagReference;
 import com.furnaghan.exif.ExifTags;
 import com.furnaghan.exif.ImageFileDirectory;
 import com.furnaghan.exif.io.StreamReader;
+import com.furnaghan.exif.tag.Thumbnail;
 import com.google.common.collect.Lists;
 
 public class ExifReader {
 
 	private static final Logger LOG = LoggerFactory.getLogger( ExifReader.class );
 
-	public static ExifTags readExifData( final InputStream in ) throws IOException {
+	public static ExifTags read( final InputStream in ) throws IOException {
 		final StreamReader data = new StreamReader( in, ByteOrder.BIG_ENDIAN, VERBOSE );
 
 		if ( !data.available() ) {
@@ -71,7 +72,8 @@ public class ExifReader {
 			// Look for the next IFD
 			final int nextOffset = data.readInt();
 			if ( nextOffset != 0 ) {
-				ifds.add( new ImageFileDirectoryReference( ifd.ifd, nextOffset ) );
+				ifds.add( new ImageFileDirectoryReference( ImageFileDirectory.Thumbnail,
+						nextOffset ) );
 			}
 
 			for ( final ExifTagData tag : tags ) {
@@ -91,6 +93,25 @@ public class ExifReader {
 					ifds.add( new ImageFileDirectoryReference( entry.getValue(), offset ) );
 				}
 			}
+		}
+
+		// Fetch any embedded thumbnails
+		final Integer[] thumbnails = exif.<Integer>remove(
+				Thumbnail.JPEGInterchangeFormat ).toArray( new Integer[0] );
+		final Integer[] thumbnailLengths = exif.<Integer>remove(
+				Thumbnail.JPEGInterchangeFormatLength ).toArray( new Integer[0] );
+		checkState( thumbnails.length == thumbnailLengths.length,
+				"%s JPEGInterchangeFormat but %s JPEGInterchangeFormatLength found",
+				thumbnails.length, thumbnailLengths.length );
+
+		for ( int i = 0; i < thumbnails.length; i++ ) {
+			final int offset = thumbnails[i];
+			final int length = thumbnailLengths[i];
+
+			data.seek( offset );
+			final byte[] bytes = data.readBytes( length );
+			LOG.info( "Loading thumbnail: {} bytes", bytes.length );
+			exif.addThumbnail( bytes );
 		}
 
 		return exif;

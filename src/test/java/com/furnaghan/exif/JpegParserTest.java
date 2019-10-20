@@ -6,6 +6,7 @@ import java.io.InputStream;
 import org.junit.Test;
 
 import com.furnaghan.exif.io.NoopOutputStream;
+import com.furnaghan.exif.jpeg.Marker;
 
 public class JpegParserTest {
 
@@ -13,9 +14,8 @@ public class JpegParserTest {
 	public void test() throws IOException {
 		final JpegParser parser = new JpegParser( new JpegParser.SegmentProcessor() {
 			@Override
-			public byte[] process( final int marker, final byte[] data ) {
-				System.out.println( String.format( "Marker %s(%d)", Integer.toHexString( marker ),
-						data.length ) );
+			public byte[] process( final Marker marker, final byte[] data ) {
+				System.out.println( String.format( "Marker %s(%d)", marker, data.length ) );
 				return data;
 			}
 		} );

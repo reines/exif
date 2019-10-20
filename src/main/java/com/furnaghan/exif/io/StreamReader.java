@@ -13,6 +13,7 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.furnaghan.exif.jpeg.Marker;
 import com.furnaghan.exif.math.Rational;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.ByteStreams;
@@ -97,13 +98,13 @@ public class StreamReader implements Closeable {
 		return DataConversions.toString( readBytes( length ) );
 	}
 
-	public int readMarker() throws IOException {
+	public Marker readMarker() throws IOException {
 		final byte[] markerBytes = new byte[2];
 		do {
 			markerBytes[0] = markerBytes[1];
 			markerBytes[1] = (byte) ( 0xff & in.read() );
 		} while ( ( 0xff & markerBytes[0] ) != 0xff || ( 0xff & markerBytes[1] ) == 0xff );
-		return DataConversions.toShort( markerBytes, 0, byteOrder );
+		return Marker.fromId( DataConversions.toShort( markerBytes, 0, byteOrder ) );
 	}
 
 	public ByteOrder readByteOrder() throws IOException {

@@ -18,6 +18,7 @@ import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
 
+import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Rule;
@@ -29,6 +30,8 @@ import com.furnaghan.exif.tag.Exif;
 import com.furnaghan.exif.tag.GPSInfo;
 import com.furnaghan.exif.tag.Image;
 import com.furnaghan.exif.tag.Iop;
+import com.furnaghan.exif.tag.Thumbnail;
+import com.google.common.base.Supplier;
 
 public class ExifParserTest {
 
@@ -71,12 +74,12 @@ public class ExifParserTest {
 		final ExifTags tags = ExifParser.read( diggerImage );
 
 		// @formatter:off
-		assertThat( tags.keys(), containsInAnyOrder(
-				Image.XResolution.get(), Image.Model.get(), Image.YResolution.get(), Image.DateTime.get(), Image.JPEGInterchangeFormatLength.get(), Image.Make.get(), Image.JPEGInterchangeFormat.get(), Image.Compression.get(), Image.YCbCrPositioning.get(), Image.Software.get(), Image.ResolutionUnit.get(), Image.Orientation.get(),
-				Exif.ColorSpace.get(), Exif.ExposureTime.get(), Exif.SubSecTimeOriginal.get(), Exif.FlashpixVersion.get(), Exif.ExifVersion.get(), Exif.ShutterSpeedValue.get(), Exif.PixelXDimension.get(), Exif.PixelYDimension.get(), Exif.WhiteBalance.get(), Exif.MeteringMode.get(), Exif.DateTimeDigitized.get(), Exif.SubSecTime.get(), Exif.SceneType.get(), Exif.ComponentsConfiguration.get(), Exif.SensingMethod.get(), Exif.DigitalZoomRatio.get(), Exif.FNumber.get(), Exif.ExposureMode.get(), Exif.ISOSpeedRatings.get(), Exif.SceneCaptureType.get(), Exif.UserComment.get(), Exif.BrightnessValue.get(), Exif.ImageUniqueID.get(), Exif.ExposureProgram.get(), Exif.SubSecTimeDigitized.get(), Exif.Flash.get(), Exif.FocalLength.get(), Exif.ExposureBiasValue.get(), Exif.ApertureValue.get(), Exif.DateTimeOriginal.get(),
-				Iop.InteroperabilityVersion.get(), Iop.InteroperabilityIndex.get(),
-				GPSInfo.GPSDateStamp.get(), GPSInfo.GPSLongitude.get(), GPSInfo.GPSLatitude.get(), GPSInfo.GPSVersionID.get(), GPSInfo.GPSTimeStamp.get(), GPSInfo.GPSAltitude.get(), GPSInfo.GPSLongitudeRef.get(), GPSInfo.GPSLatitudeRef.get(), GPSInfo.GPSAltitudeRef.get()
-		) );
+		assertDirectoryContains( tags, ImageFileDirectory.Image, Image.XResolution, Image.Model, Image.YResolution, Image.DateTime, Image.Make, Image.YCbCrPositioning, Image.Software, Image.ResolutionUnit, Image.Orientation );
+		assertDirectoryContains( tags, ImageFileDirectory.Thumbnail, Thumbnail.XResolution, Thumbnail.YResolution, Thumbnail.Compression, Thumbnail.ResolutionUnit );
+		assertDirectoryContains( tags, ImageFileDirectory.Exif, Exif.ColorSpace, Exif.ExposureTime, Exif.SubSecTimeOriginal, Exif.FlashpixVersion, Exif.ExifVersion, Exif.ShutterSpeedValue, Exif.PixelXDimension, Exif.PixelYDimension, Exif.WhiteBalance, Exif.MeteringMode, Exif.DateTimeDigitized, Exif.SubSecTime, Exif.SceneType, Exif.ComponentsConfiguration, Exif.SensingMethod, Exif.DigitalZoomRatio, Exif.FNumber, Exif.ExposureMode, Exif.ISOSpeedRatings, Exif.SceneCaptureType, Exif.UserComment, Exif.BrightnessValue, Exif.ImageUniqueID, Exif.ExposureProgram, Exif.SubSecTimeDigitized, Exif.Flash, Exif.FocalLength, Exif.ExposureBiasValue, Exif.ApertureValue, Exif.DateTimeOriginal );
+		assertDirectoryContains( tags, ImageFileDirectory.Iop, Iop.InteroperabilityVersion, Iop.InteroperabilityIndex );
+		assertDirectoryContains( tags, ImageFileDirectory.GPSInfo, GPSInfo.GPSDateStamp, GPSInfo.GPSLongitude, GPSInfo.GPSLatitude, GPSInfo.GPSVersionID, GPSInfo.GPSTimeStamp, GPSInfo.GPSAltitude, GPSInfo.GPSLongitudeRef, GPSInfo.GPSLatitudeRef, GPSInfo.GPSAltitudeRef );
+		assertThat( tags.hasThumbnails(), is( true ) );
 		// @formatter:on
 
 		// Read directly
@@ -100,11 +103,11 @@ public class ExifParserTest {
 		final ExifTags tags = ExifParser.read( sampleImage );
 
 		// @formatter:off
-		assertThat( tags.keys(), containsInAnyOrder(
-				Image.DateTime.get(), Image.Orientation.get(), Image.Compression.get(), Image.Make.get(), Image.Model.get(), Image.XResolution.get(), Image.YResolution.get(), Image.ResolutionUnit.get(), Image.JPEGInterchangeFormat.get(), Image.JPEGInterchangeFormatLength.get(), Image.YCbCrPositioning.get(),
-				Iop.RelatedImageWidth.get(), Iop.RelatedImageLength.get(), Iop.InteroperabilityIndex.get(), Iop.InteroperabilityVersion.get(),
-				Exif.Flash.get(), Exif.MeteringMode.get(), Exif.WhiteBalance.get(), Exif.ShutterSpeedValue.get(), Exif.DigitalZoomRatio.get(), Exif.CompressedBitsPerPixel.get(), Exif.ApertureValue.get(), Exif.ComponentsConfiguration.get(), Exif.ColorSpace.get(), Exif.CustomRendered.get(), Exif.ExposureMode.get(), Exif.FocalPlaneResolutionUnit.get(), Exif.FocalPlaneXResolution.get(), Exif.FocalPlaneYResolution.get(), Exif.MaxApertureValue.get(), Exif.ExposureTime.get(), Exif.SceneCaptureType.get(), Exif.DateTimeOriginal.get(), Exif.UserComment.get(), Exif.FileSource.get(), Exif.FlashpixVersion.get(), Exif.ExifVersion.get(), Exif.PixelXDimension.get(), Exif.PixelYDimension.get(), Exif.MakerNote.get(), Exif.DateTimeDigitized.get(), Exif.ExposureBiasValue.get(), Exif.FocalLength.get(), Exif.SensingMethod.get(), Exif.FNumber.get()
-		) );
+		assertDirectoryContains( tags, ImageFileDirectory.Image, Image.DateTime, Image.Orientation, Image.Make, Image.Model, Image.XResolution, Image.YResolution, Image.ResolutionUnit, Image.YCbCrPositioning );
+		assertDirectoryContains( tags, ImageFileDirectory.Thumbnail, Thumbnail.XResolution, Thumbnail.YResolution, Thumbnail.Compression, Thumbnail.ResolutionUnit );
+		assertDirectoryContains( tags, ImageFileDirectory.Iop, Iop.RelatedImageWidth, Iop.RelatedImageLength, Iop.InteroperabilityIndex, Iop.InteroperabilityVersion );
+		assertDirectoryContains( tags, ImageFileDirectory.Exif, Exif.Flash, Exif.MeteringMode, Exif.WhiteBalance, Exif.ShutterSpeedValue, Exif.DigitalZoomRatio, Exif.CompressedBitsPerPixel, Exif.ApertureValue, Exif.ComponentsConfiguration, Exif.ColorSpace, Exif.CustomRendered, Exif.ExposureMode, Exif.FocalPlaneResolutionUnit, Exif.FocalPlaneXResolution, Exif.FocalPlaneYResolution, Exif.MaxApertureValue, Exif.ExposureTime, Exif.SceneCaptureType, Exif.DateTimeOriginal, Exif.UserComment, Exif.FileSource, Exif.FlashpixVersion, Exif.ExifVersion, Exif.PixelXDimension, Exif.PixelYDimension, Exif.MakerNote, Exif.DateTimeDigitized, Exif.ExposureBiasValue, Exif.FocalLength, Exif.SensingMethod, Exif.FNumber );
+		assertThat( tags.hasThumbnails(), is( true ) );
 		// @formatter:on
 
 		// Read directly
@@ -205,5 +208,15 @@ public class ExifParserTest {
 		final ExifTags tags = ExifTags.empty();
 		tags.set( Image.DateTime, new byte[0] );
 		ExifParser.write( sampleImage, tags );
+	}
+
+	@SuppressWarnings("unchecked")
+	private static void assertDirectoryContains( final ExifTags exif, final ImageFileDirectory ifd,
+			final Supplier<ExifTagReference>... tags ) {
+		final Matcher<ExifTagReference>[] matchers = new Matcher[tags.length];
+		for ( int i = 0; i < tags.length; i++ ) {
+			matchers[i] = is( tags[i].get() );
+		}
+		assertThat( exif.getDirectory( ifd ).keySet(), containsInAnyOrder( matchers ) );
 	}
 }

@@ -23,17 +23,18 @@ import com.furnaghan.exif.ExifTags;
 import com.furnaghan.exif.ImageFileDirectory;
 import com.furnaghan.exif.JpegParser;
 import com.furnaghan.exif.io.NoopOutputStream;
+import com.furnaghan.exif.jpeg.Marker;
 import com.furnaghan.exif.tag.Exif;
 import com.furnaghan.exif.tag.GPSInfo;
 import com.furnaghan.exif.tag.Image;
 import com.furnaghan.exif.tag.Iop;
+import com.furnaghan.exif.tag.Thumbnail;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 public class ExifParser {
 
-	private static final Set<Integer> MARKERS = ImmutableSet.of(
-			0xFFE1 ); // TODO: , 0xFFE2, 0xFFED );
+	private static final Set<Marker> EXIF_MARKERS = ImmutableSet.of( Marker.APP1 );
 
 	static final String EXIF_NAME = "Exif";
 	static final int TIFF_MARKER = 0x002A;
@@ -52,6 +53,9 @@ public class ExifParser {
 
 	static {
 		for ( final Image tag : Image.values() ) {
+			ExifTagReference.register( tag.get(), tag.name() );
+		}
+		for ( final Thumbnail tag : Thumbnail.values() ) {
 			ExifTagReference.register( tag.get(), tag.name() );
 		}
 		for ( final Exif tag : Exif.values() ) {
@@ -77,17 +81,17 @@ public class ExifParser {
 		// Process the image, discarding the output
 		new JpegParser( new JpegParser.SegmentProcessor() {
 			@Override
-			public byte[] process( final int marker, final byte[] data ) {
-				if ( MARKERS.contains( marker ) ) {
+			public byte[] process( final Marker marker, final byte[] data ) {
+				if ( EXIF_MARKERS.contains( marker ) ) {
 					try ( final InputStream exifIn = new ByteArrayInputStream( data ) ) {
-						exif.set( ExifReader.readExifData( exifIn ) );
+						exif.set( ExifReader.read( exifIn ) );
 					} catch ( final Exception e ) {
 						LOG.warn( "Failed to read exif segment: {}", marker, e );
 					}
 				}
 				return data;
 			}
-		}, MARKERS ).process( in, new NoopOutputStream() );
+		}, EXIF_MARKERS ).process( in, new NoopOutputStream() );
 
 		return exif.get();
 	}
@@ -116,10 +120,10 @@ public class ExifParser {
 		// Process the image, discarding the output
 		new JpegParser( new JpegParser.SegmentProcessor() {
 			@Override
-			public byte[] process( final int marker, final byte[] data ) {
-				if ( MARKERS.contains( marker ) ) {
+			public byte[] process( final Marker marker, final byte[] data ) {
+				if ( EXIF_MARKERS.contains( marker ) ) {
 					try ( final InputStream exifIn = new ByteArrayInputStream( data ) ) {
-						final ExifTags exif = updater.update( ExifReader.readExifData( exifIn ) );
+						final ExifTags exif = updater.update( ExifReader.read( exifIn ) );
 						try ( final ByteArrayOutputStream exifOut = new ByteArrayOutputStream() ) {
 							final ExifWriter writer = new ExifWriter( exifOut );
 							writer.write( exif );
@@ -131,7 +135,7 @@ public class ExifParser {
 				}
 				return data;
 			}
-		}, MARKERS ).process( in, out );
+		}, EXIF_MARKERS ).process( in, out );
 	}
 
 	public static void write( final InputStream in, final OutputStream out, final ExifTags newTags )
