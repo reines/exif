@@ -7,11 +7,8 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.Calendar;
@@ -55,17 +52,6 @@ public class ExifParserTest {
 	public void setUp() throws IOException {
 		sampleImage = copyFile( "/images/sample.jpg" );
 		diggerImage = copyFile( "/images/digger.jpg" );
-	}
-
-	// TODO: remove
-	@Test
-	public void bla() throws IOException {
-		try ( final InputStream in = new FileInputStream( sampleImage ) ) {
-			try ( final OutputStream out = new FileOutputStream(
-					"/Users/jamiefurnaghan/Desktop/bla.jpg" ) ) {
-				ExifParser.copy( in, out );
-			}
-		}
 	}
 
 	@Test

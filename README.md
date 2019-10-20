@@ -39,7 +39,7 @@ System.out.println( tags.getDate() );
 System.out.println( tags.getOrientation() );
 
 // Less common tags via ExifTag enum.
-System.out.println( tags.get( ExifTag.Image_JPEGInterchangeFormatLength ) );
+System.out.println( tags.get( Image.ISOSpeedRatings ) );
 ```
 
 #### Update the tags in an image.
@@ -48,6 +48,7 @@ System.out.println( tags.get( ExifTag.Image_JPEGInterchangeFormatLength ) );
 ExifParser.update( targetFile, tags -> {
     tags.setDate( new Date() );
     tags.setOrientation( ExifTags.Orientation.NORMAL );
+    return tags;
 } );
 ```
 
@@ -59,8 +60,9 @@ final ExifTags tags = ExifTags.empty();
 // Using some helper methods for common tags
 tags.setDate( new Date() );
 tags.setOrientation( ExifTags.Orientation.NORMAL );
+
 // Less common tags via ExifTag enum.
-tags.add( ExifTag.Image_JPEGInterchangeFormatLength, 17 );
+tags.add( Image.ISOSpeedRatings, 17 );
 
 ExifParser.write( targetFile, tags );
 ```
