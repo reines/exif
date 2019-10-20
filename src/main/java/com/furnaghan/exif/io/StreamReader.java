@@ -50,6 +50,10 @@ public class StreamReader implements Closeable {
 		return in.available() > 0;
 	}
 
+	public InputStream stream() {
+		return in;
+	}
+
 	public InputStream limit( final int length ) {
 		return ByteStreams.limit( in, length );
 	}

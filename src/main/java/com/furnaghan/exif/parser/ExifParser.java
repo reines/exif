@@ -21,8 +21,8 @@ import org.slf4j.LoggerFactory;
 import com.furnaghan.exif.ExifTagReference;
 import com.furnaghan.exif.ExifTags;
 import com.furnaghan.exif.ImageFileDirectory;
-import com.furnaghan.exif.JpegParser;
 import com.furnaghan.exif.io.NoopOutputStream;
+import com.furnaghan.exif.jpeg.JpegParser;
 import com.furnaghan.exif.jpeg.Marker;
 import com.furnaghan.exif.tag.Exif;
 import com.furnaghan.exif.tag.GPSInfo;
@@ -81,15 +81,15 @@ public class ExifParser {
 		// Process the image, discarding the output
 		new JpegParser( new JpegParser.SegmentProcessor() {
 			@Override
-			public byte[] process( final Marker marker, final byte[] data ) {
+			public InputStream process( final Marker marker, final InputStream in ) {
 				if ( EXIF_MARKERS.contains( marker ) ) {
-					try ( final InputStream exifIn = new ByteArrayInputStream( data ) ) {
-						exif.set( ExifReader.read( exifIn ) );
+					try {
+						exif.set( ExifReader.read( in ) );
 					} catch ( final Exception e ) {
 						LOG.warn( "Failed to read exif segment: {}", marker, e );
 					}
 				}
-				return data;
+				return in;
 			}
 		}, EXIF_MARKERS ).process( in, new NoopOutputStream() );
 
@@ -120,20 +120,20 @@ public class ExifParser {
 		// Process the image, discarding the output
 		new JpegParser( new JpegParser.SegmentProcessor() {
 			@Override
-			public byte[] process( final Marker marker, final byte[] data ) {
+			public InputStream process( final Marker marker, final InputStream in ) {
 				if ( EXIF_MARKERS.contains( marker ) ) {
-					try ( final InputStream exifIn = new ByteArrayInputStream( data ) ) {
-						final ExifTags exif = updater.update( ExifReader.read( exifIn ) );
+					try {
+						final ExifTags exif = updater.update( ExifReader.read( in ) );
 						try ( final ByteArrayOutputStream exifOut = new ByteArrayOutputStream() ) {
 							final ExifWriter writer = new ExifWriter( exifOut );
 							writer.write( exif );
-							return exifOut.toByteArray();
+							return new ByteArrayInputStream( exifOut.toByteArray() );
 						}
 					} catch ( final Exception e ) {
 						LOG.warn( "Failed to process exif segment: {}", marker, e );
 					}
 				}
-				return data;
+				return in;
 			}
 		}, EXIF_MARKERS ).process( in, out );
 	}

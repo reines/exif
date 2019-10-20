@@ -6,6 +6,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteOrder;
 import java.util.Map;
@@ -16,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import com.furnaghan.exif.jpeg.Marker;
 import com.furnaghan.exif.math.Rational;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.io.ByteStreams;
 import com.google.common.io.CountingOutputStream;
 
 public class StreamWriter implements Closeable {
@@ -55,6 +57,10 @@ public class StreamWriter implements Closeable {
 
 	public int offset() {
 		return (int) ( out.getCount() - mark );
+	}
+
+	public void writeStream( final InputStream in ) throws IOException {
+		ByteStreams.copy( in, out );
 	}
 
 	public void writeBytes( final byte[] bytes ) throws IOException {

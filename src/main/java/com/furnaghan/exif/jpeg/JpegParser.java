@@ -1,7 +1,8 @@
-package com.furnaghan.exif;
+package com.furnaghan.exif.jpeg;
 
 import static com.google.common.base.Preconditions.checkState;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -15,13 +16,13 @@ import org.slf4j.LoggerFactory;
 
 import com.furnaghan.exif.io.StreamReader;
 import com.furnaghan.exif.io.StreamWriter;
-import com.furnaghan.exif.jpeg.Marker;
 import com.google.common.collect.Sets;
+import com.google.common.io.ByteStreams;
 
 public class JpegParser {
 
 	public interface SegmentProcessor {
-		byte[] process( final Marker marker, final byte[] data ) throws IOException;
+		InputStream process( final Marker marker, final InputStream in ) throws IOException;
 	}
 
 	private static final Logger LOG = LoggerFactory.getLogger( JpegParser.class );
@@ -53,21 +54,21 @@ public class JpegParser {
 
 			if ( marker == Marker.EOI || marker == Marker.SOS ) {
 				for ( final Marker newMarker : Sets.difference( requiredSegments, markers ) ) {
-					processSegment( out, newMarker, new byte[0] );
+					processSegment( out, newMarker, new ByteArrayInputStream( new byte[0] ) );
 				}
 
-				processImage( out, marker, in.readBytes() );
+				processImage( out, marker, in.stream() );
 				break;
 			}
 
 			final int length = in.readShort();
-			processSegment( out, marker, in.readBytes( length - 2 ) );
+			processSegment( out, marker, in.limit( length - 2 ) );
 		}
 	}
 
-	private void processSegment( final StreamWriter out, final Marker marker, final byte[] input )
+	private void processSegment( final StreamWriter out, final Marker marker, final InputStream in )
 			throws IOException {
-		final byte[] bytes = processor.process( marker, input );
+		final byte[] bytes = ByteStreams.toByteArray( processor.process( marker, in ) );
 		if ( bytes.length > 0 ) {
 			LOG.info( "Writing {} bytes at segment {}", bytes.length, marker );
 			out.writeMarker( marker );
@@ -76,11 +77,11 @@ public class JpegParser {
 		}
 	}
 
-	private void processImage( final StreamWriter out, final Marker marker, final byte[] input )
+	private void processImage( final StreamWriter out, final Marker marker, final InputStream in )
 			throws IOException {
-		final byte[] bytes = processor.process( marker, input );
-		LOG.info( "Writing {} bytes at segment {}", bytes.length, marker );
+		final InputStream bytes = processor.process( marker, in );
+		LOG.info( "Writing stream of bytes at segment {}", marker );
 		out.writeMarker( marker );
-		out.writeBytes( bytes );
+		out.writeStream( bytes );
 	}
 }
